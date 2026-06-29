@@ -1,0 +1,65 @@
+# Local Clip Studio — Docker Compose
+#
+# Starts the backend server with optional Celery worker.
+# GPU passthrough requires nvidia-container-toolkit.
+#
+# Usage:
+#   docker compose -f docker/docker-compose.yml up -d
+#   docker compose -f docker/docker-compose.yml down
+#
+
+services:
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: localclip-backend
+    ports:
+      - "8765:8765"
+    volumes:
+      - localclip_data:/home/user/.localclip
+      - /path/to/models:/home/user/.localclip/models:ro  # Optional: pre-downloaded models
+    environment:
+      - LOCALCLIP_STORAGE_PATH=/home/user/.localclip
+      - LOCALCLIP_GPU_BACKEND=auto
+      - LOCALCLIP_LOG_LEVEL=INFO
+    # GPU support (uncomment if nvidia-container-toolkit is installed)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/api/v1/system/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # Optional: Celery worker for background AI pipeline jobs
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: localclip-worker
+    command: celery -A backend.infrastructure.queue.celery_app worker --loglevel=info --concurrency=2
+    volumes:
+      - localclip_data:/home/user/.localclip
+    environment:
+      - LOCALCLIP_STORAGE_PATH=/home/user/.localclip
+      - LOCALCLIP_GPU_BACKEND=auto
+      - LOCALCLIP_CELERY_BROKER_URL=filesystem://
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+volumes:
+  localclip_data:

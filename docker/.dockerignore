@@ -1,0 +1,48 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+.env
+
+# Node / Frontend
+node_modules/
+frontend/
+dist/
+.vite/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local data
+.localclip/
+*.db
+*.db-journal
+
+# Tests
+tests/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Documentation
+docs/
+
+# Scripts except those needed in runtime
+scripts/setup.sh
+scripts/download_models.sh
