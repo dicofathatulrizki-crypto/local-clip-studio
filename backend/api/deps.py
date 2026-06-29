@@ -16,11 +16,14 @@ from __future__ import annotations
 from collections.abc import AsyncGenerator
 from typing import TYPE_CHECKING
 
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from backend.config.encryption import APIKeyEncryption, get_encryption
 
 if TYPE_CHECKING:
     from fastapi import FastAPI
 from backend.config.settings import Settings, get_settings
+from backend.infrastructure.database.engine import get_db_session as _get_db_session
 from backend.infrastructure.logging.correlation import get_request_id
 from backend.infrastructure.logging.logger import get_logger
 
@@ -48,18 +51,19 @@ def get_request_id_dep() -> str:
     return get_request_id()
 
 
-# ─── Database Dependencies (placeholder) ────────────────────────
+# ─── Database Dependencies ──────────────────────────────────────
 
 
-async def get_db_session() -> AsyncGenerator[None, None]:
+async def get_db_session() -> AsyncGenerator[AsyncSession, None]:
     """Provide a database session for the request lifecycle.
 
-    Placeholder — will be implemented in Module A4.
+    Automatically commits on success and rolls back on exception.
+    Usage in route handlers:
+        async def my_route(db: AsyncSession = Depends(get_db_session)):
+            ...
     """
-    try:
-        yield
-    finally:
-        pass
+    async for session in _get_db_session():
+        yield session
 
 
 # ─── Service Dependencies (placeholders for future modules) ─────

@@ -9,10 +9,14 @@ from fastapi import FastAPI
 
 from backend.api.middleware import register_middleware
 from backend.config.settings import get_settings
+from backend.infrastructure.database import init_database
 from backend.infrastructure.errors import register_exception_handlers
 from backend.infrastructure.logging.logger import configure_logging, get_logger
 
 logger = get_logger(__name__)
+
+
+_db_manager_ref = None
 
 
 def create_app() -> FastAPI:
@@ -50,18 +54,45 @@ def create_app() -> FastAPI:
             },
         )
 
+        # Initialize database on startup
+        global _db_manager_ref
+        try:
+            db = await init_database()
+            _db_manager_ref = db
+            health = await db.health_check()
+            logger.info(
+                "Database initialized",
+                extra={"health": health},
+            )
+        except Exception as exc:
+            logger.critical(
+                "Database initialization failed",
+                extra={"error": str(exc)},
+            )
+            raise
+
     # Shutdown event
     @app.on_event("shutdown")
     async def on_shutdown() -> None:
         logger.info("Application shutting down")
+        global _db_manager_ref
+        if _db_manager_ref is not None:
+            await _db_manager_ref.shutdown()
+            _db_manager_ref = None
 
     # Root health check
     @app.get("/health")
-    async def health_check() -> dict[str, str]:
+    async def health_check() -> dict[str, str | dict]:
+        from backend.infrastructure.database.engine import get_db_manager
+
+        db = get_db_manager()
+        db_health = await db.health_check()
+
         return {
             "status": "ok",
             "version": "1.0.0",
             "app_name": "Local Clip Studio",
+            "database": db_health,
         }
 
     logger.info("Application created successfully")
