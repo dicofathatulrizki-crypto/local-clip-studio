@@ -39,7 +39,7 @@ class TestSettingsDefaults:
 
     def test_reload_settings_returns_new_instance(self) -> None:
         """reload_settings() should return a fresh instance."""
-        s1 = get_settings()
+        _ = get_settings()
         s2 = reload_settings()
         # May be the same if no config file changed, but should be valid
         assert s2 is not None

@@ -25,12 +25,15 @@ logger = get_logger(__name__)
 # ─── Severity ───────────────────────────────────────────────────
 
 
-class ErrorSeverity(str, Enum):
+class ErrorSeverity(Enum):
     DEBUG = "debug"
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
     CRITICAL = "critical"
+
+    def __str__(self) -> str:
+        return str(self.value)
 
 
 # ─── Error Catalog Entry ────────────────────────────────────────
@@ -57,7 +60,7 @@ class ErrorCatalogEntry:
         self.log_level = log_level
         self.http_status = http_status
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, object]:
         return {
             "code": self.code,
             "category": self.category,
@@ -70,7 +73,7 @@ class ErrorCatalogEntry:
 
 # ─── Error Catalog ──────────────────────────────────────────────
 
-_error_catalog: dict[str, ErrorCatalogEntry] = {}
+_error_catalog: dict[str, "ErrorCatalogEntry"] = {}
 
 
 def _register_errors() -> dict[str, ErrorCatalogEntry]:
@@ -298,7 +301,7 @@ class AppError(Exception):
             else:
                 self.message = entry.message.format(**self.details)
         else:
-            self.catalog_entry = None  # type: ignore[assignment]
+            self.catalog_entry = None
             self.http_status = http_status or 500
             self.message = message or f"Unknown error: {code}"
 
@@ -312,7 +315,7 @@ class AppError(Exception):
 # ─── Error Response Formatting ──────────────────────────────────
 
 
-def format_error_response(error: AppError) -> dict:
+def format_error_response(error: AppError) -> dict[str, object]:
     """Format an AppError into the standard API error response format."""
     response = {
         "error": {
@@ -331,7 +334,7 @@ def format_error_response(error: AppError) -> dict:
     return response
 
 
-def get_error_info() -> dict:
+def get_error_info() -> dict[str, dict[str, object]]:
     """Get the complete error catalog as a dictionary (for API docs)."""
     return {code: entry.to_dict() for code, entry in error_catalog.items()}
 

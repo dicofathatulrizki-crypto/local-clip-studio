@@ -13,6 +13,7 @@ import os
 import platform
 from pathlib import Path
 from threading import Lock
+from typing import Any
 
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
@@ -124,7 +125,7 @@ class APIKeyEncryption:
         token = fernet.decrypt(ciphertext.encode("utf-8"))
         return token.decode("utf-8")
 
-    def encrypt_dict(self, data: dict[str, object]) -> dict[str, object]:
+    def encrypt_dict(self, data: dict[str, Any]) -> dict[str, Any]:
         """Encrypt all string values in a dictionary (for API keys in provider config)."""
         result = {}
         for key, value in data.items():
@@ -134,7 +135,7 @@ class APIKeyEncryption:
                 result[key] = value
         return result
 
-    def decrypt_dict(self, data: dict[str, object]) -> dict[str, object]:
+    def decrypt_dict(self, data: dict[str, Any]) -> dict[str, Any]:
         """Decrypt all string values in a dictionary."""
         result = {}
         for key, value in data.items():

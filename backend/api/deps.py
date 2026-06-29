@@ -104,7 +104,7 @@ def get_provider_service() -> None:
 # ─── Router Registration Helper ─────────────────────────────────
 
 
-def register_routes(app: FastAPI) -> None:
+def register_routes(_app: FastAPI) -> None:
     """Register all API route modules.
 
     Placeholder — routes will be added as modules B10 and C10.

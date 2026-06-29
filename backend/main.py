@@ -57,7 +57,7 @@ def create_app() -> FastAPI:
 
     # Root health check
     @app.get("/health")
-    async def health_check() -> dict:
+    async def health_check() -> dict[str, str]:
         return {
             "status": "ok",
             "version": "1.0.0",

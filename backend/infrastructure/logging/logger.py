@@ -47,10 +47,11 @@ def _filter_sensitive_data(data: dict[str, Any]) -> dict[str, Any]:
         elif isinstance(value, dict):
             result[key] = _filter_sensitive_data(value)
         elif isinstance(value, list):
-            result[key] = [
+            filtered_list: list[Any] = [
                 _filter_sensitive_data(item) if isinstance(item, dict) else item
                 for item in value
             ]
+            result[key] = filtered_list
         else:
             result[key] = value
     return result
@@ -73,10 +74,12 @@ class JSONFormatter(logging.Formatter):
         }
 
         # Add exception info if present
-        if record.exc_info and record.exc_info[0] is not None:
+        exc_type = record.exc_info[0].__name__ if record.exc_info and record.exc_info[0] is not None else None
+        if exc_type is not None:
+            exc_message = str(record.exc_info[1]) if record.exc_info and record.exc_info[1] is not None else ""
             log_entry["exception"] = {
-                "type": record.exc_info[0].__name__,
-                "message": str(record.exc_info[1]),
+                "type": exc_type,
+                "message": exc_message,
             }
 
         # Add extra fields from record

@@ -124,7 +124,7 @@ class Settings(BaseSettings):
     config_file_path: str = str(Path.home() / ".localclip" / "config" / "settings.json")
     providers_file_path: str = str(Path.home() / ".localclip" / "config" / "providers.json")
 
-    def get_category(self, category: str) -> dict[str, object]:
+    def get_category(self, category: str) -> dict[str, Any]:
         """Get settings dictionary for a specific category."""
         category_map = {
             "general": self.general,
@@ -139,10 +139,12 @@ class Settings(BaseSettings):
         }
         model = category_map.get(category)
         if model is None:
-            raise KeyError(f"Unknown settings category: {category}")
-        return model.model_dump()
+            msg = f"Unknown settings category: {category}"
+            raise KeyError(msg)
+        result: dict[str, Any] = model.model_dump()  # type: ignore[no-any-return]
+        return result
 
-    def update_category(self, category: str, updates: dict[str, object]) -> dict[str, object]:
+    def update_category(self, category: str, updates: dict[str, Any]) -> dict[str, Any]:
         """Update a settings category with partial merge semantics."""
         category_map = {
             "general": "general",
@@ -154,7 +156,8 @@ class Settings(BaseSettings):
         }
         attr = category_map.get(category)
         if attr is None:
-            raise KeyError(f"Unknown settings category: {category}")
+            msg = f"Unknown settings category: {category}"
+            raise KeyError(msg)
 
         current = getattr(self, attr)
         updated = current.model_copy(update=updates)
@@ -221,7 +224,7 @@ def _load_settings() -> Settings:
                         try:
                             settings.update_category(category, values)
                         except KeyError:
-                            pass  # Unknown category, skip
+                            pass
             return settings
         except (OSError, json.JSONDecodeError) as e:
             # Log and use defaults
