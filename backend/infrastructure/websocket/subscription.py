@@ -88,8 +88,9 @@ class SubscriptionManager:
             SubscriptionError: If max subscriptions per client reached
         """
         if not topic or not topic.strip():
+            msg = "Topic cannot be empty"
             raise InvalidMessageError(
-                "Topic cannot be empty",
+                msg,
                 {"client_id": client_id},
             )
 
@@ -101,8 +102,9 @@ class SubscriptionManager:
                 return False
 
             if len(self._client_topics[client_id]) >= self._max_per_client:
+                msg = f"Max subscriptions ({self._max_per_client}) reached for client"
                 raise SubscriptionError(
-                    f"Max subscriptions ({self._max_per_client}) reached for client",
+                    msg,
                     {
                         "client_id": client_id,
                         "current": len(self._client_topics[client_id]),

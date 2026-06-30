@@ -46,28 +46,28 @@ from backend.infrastructure.websocket.serializer import Serializer
 from backend.infrastructure.websocket.subscription import SubscriptionManager
 
 __all__ = [
+    # Models
+    "ClientInfo",
+    # Exceptions
+    "ConnectionClosedError",
     "ConnectionManager",
     "EventBus",
     "HeartbeatMonitor",
-    "Serializer",
-    "SubscriptionManager",
-    "WebSocketHandler",
-    "WebSocketManager",
-    # Models
-    "ClientInfo",
-    "MessageEnvelope",
-    "ProgressUpdate",
-    "SubscriptionTopic",
-    "WebSocketEvent",
-    "WebSocketMessage",
-    "WebSocketMessageType",
-    # Exceptions
-    "ConnectionClosedError",
     "HeartbeatTimeoutError",
     "InvalidMessageError",
     "MaxClientsReachedError",
+    "MessageEnvelope",
     "MessageTooLargeError",
+    "ProgressUpdate",
     "RateLimitExceededError",
+    "Serializer",
     "SubscriptionError",
+    "SubscriptionManager",
+    "SubscriptionTopic",
     "WebSocketError",
+    "WebSocketEvent",
+    "WebSocketHandler",
+    "WebSocketManager",
+    "WebSocketMessage",
+    "WebSocketMessageType",
 ]

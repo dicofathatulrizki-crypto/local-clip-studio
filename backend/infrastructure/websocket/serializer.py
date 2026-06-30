@@ -90,8 +90,9 @@ class Serializer:
         except MessageTooLargeError:
             raise
         except (TypeError, ValueError) as exc:
+            msg = f"Failed to serialize message: {exc}"
             raise SerializationError(
-                f"Failed to serialize message: {exc}",
+                msg,
                 {"type": envelope.type.value if hasattr(envelope, "type") else "unknown"},
             ) from exc
 
@@ -123,8 +124,9 @@ class Serializer:
             data: dict[str, Any] = json.loads(raw)
 
             if not isinstance(data, dict):
+                msg = "Message must be a JSON object"
                 raise InvalidMessageError(
-                    "Message must be a JSON object",
+                    msg,
                     {"received_type": type(data).__name__},
                 )
 
@@ -134,8 +136,9 @@ class Serializer:
             return self._dict_to_message(data)
 
         except json.JSONDecodeError as exc:
+            msg = f"Malformed JSON: {exc}"
             raise InvalidMessageError(
-                f"Malformed JSON: {exc}",
+                msg,
                 {"position": exc.pos, "line": exc.lineno},
             ) from exc
         except MessageTooLargeError:
@@ -143,8 +146,9 @@ class Serializer:
         except InvalidMessageError:
             raise
         except (KeyError, ValueError, TypeError) as exc:
+            msg = f"Failed to deserialize message: {exc}"
             raise SerializationError(
-                f"Failed to deserialize message: {exc}",
+                msg,
             ) from exc
 
     def serialize_event(
@@ -192,7 +196,8 @@ class Serializer:
             if isinstance(result, str):
                 return result
             return str(result)
-        raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+        msg = f"Object of type {type(obj).__name__} is not JSON serializable"
+        raise TypeError(msg)
 
     @staticmethod
     def _envelope_to_dict(envelope: MessageEnvelope) -> dict[str, Any]:
@@ -226,15 +231,17 @@ class Serializer:
         """
         # Check required fields
         if "type" not in data:
+            msg = "Missing required field: 'type'"
             raise InvalidMessageError(
-                "Missing required field: 'type'",
+                msg,
                 {"available_keys": list(data.keys())},
             )
 
         msg_type = data["type"]
         if not isinstance(msg_type, str) or not msg_type.strip():
+            msg = "'type' must be a non-empty string"
             raise InvalidMessageError(
-                "'type' must be a non-empty string",
+                msg,
                 {"type": msg_type},
             )
 
@@ -242,16 +249,18 @@ class Serializer:
         try:
             WebSocketMessageType(msg_type)
         except ValueError:
+            msg = f"Unknown message type: '{msg_type}'"
             raise InvalidMessageError(
-                f"Unknown message type: '{msg_type}'",
+                msg,
                 {"type": msg_type, "known_types": [t.value for t in WebSocketMessageType]},
             )
 
         # Check schema version compatibility
         schema_version = data.get("schema_version", _CURRENT_SCHEMA_VERSION)
         if schema_version not in _SUPPORTED_SCHEMA_VERSIONS:
+            msg = f"Unsupported schema version: {schema_version}"
             raise InvalidMessageError(
-                f"Unsupported schema version: {schema_version}",
+                msg,
                 {
                     "version": schema_version,
                     "supported_versions": sorted(_SUPPORTED_SCHEMA_VERSIONS),
@@ -260,8 +269,9 @@ class Serializer:
 
         # Ensure payload is a dict
         if "payload" in data and not isinstance(data["payload"], dict):
+            msg = "'payload' must be a JSON object"
             raise InvalidMessageError(
-                "'payload' must be a JSON object",
+                msg,
                 {"payload_type": type(data["payload"]).__name__},
             )
 

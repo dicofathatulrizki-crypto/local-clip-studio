@@ -17,6 +17,7 @@ Architecture:
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime
 from typing import Any
@@ -206,12 +207,13 @@ class WebSocketManager:
             # Update activity timestamp
             await self.connection_manager.update_activity(client_id)
 
-            # Handle built-in message types
+            # Handle built-in message types (ping, pong, subscribe, unsubscribe)
+            # built-in handlers return None when message is handled internally
+            # or return the message for application-level handling
             response = await self._handle_builtin(client_id, message)
             if response is not None:
                 return response
-
-            return message
+            return None
 
         except (InvalidMessageError, MessageTooLargeError, RateLimitExceededError) as exc:
             # Send error back to client
@@ -727,10 +729,8 @@ class WebSocketManager:
                 clients = await self.connection_manager.get_alive_clients()
                 for client in clients:
                     await self.heartbeat.mark_ping_sent(client.client_id)
-                    try:
+                    with contextlib.suppress(Exception):
                         await self.send_ping(client.client_id)
-                    except Exception:
-                        pass
 
                 # Check for timeouts
                 for client in clients:

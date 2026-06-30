@@ -39,7 +39,8 @@ class TestHeartbeatMonitor:
         assert monitor.interval_seconds == 60.0
         assert monitor.timeout_seconds == 120.0
 
-    def test_start_stop(self, monitor: HeartbeatMonitor) -> None:
+    @pytest.mark.asyncio
+    async def test_start_stop(self, monitor: HeartbeatMonitor) -> None:
         """Start and stop the heartbeat monitor."""
         task = monitor.start()
         assert monitor.is_running is True
@@ -95,7 +96,8 @@ class TestHeartbeatMonitor:
         timed_out = await monitor.check_timeout("client-1", force=True)
         assert timed_out is True
 
-    def test_start_twice(self, monitor: HeartbeatMonitor) -> None:
+    @pytest.mark.asyncio
+    async def test_start_twice(self, monitor: HeartbeatMonitor) -> None:
         """Starting twice returns same task."""
         task1 = monitor.start()
         task2 = monitor.start()

@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -21,7 +21,7 @@ from typing import Any
 # ---------------------------------------------------------------------------
 
 
-class WebSocketMessageType(str, Enum):
+class WebSocketMessageType(StrEnum):
     """All supported WebSocket message types.
 
     Follows pattern: ACTION_DIRECTION or DOMAIN_EVENT
@@ -114,7 +114,7 @@ class WebSocketMessageType(str, Enum):
 # ---------------------------------------------------------------------------
 
 
-class SubscriptionTopic(str, Enum):
+class SubscriptionTopic(StrEnum):
     """Topics that clients can subscribe to for receiving events."""
 
     # Global system topics

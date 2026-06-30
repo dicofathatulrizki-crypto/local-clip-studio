@@ -86,34 +86,18 @@ class EventBus:
         Raises:
             WebSocketError: If serialization or send fails
         """
-        # Deduplication
+        # Deduplication: check and add in one atomic operation
         if not skip_dedup and event.event_id:
             async with self._lock:
                 if event.event_id in self._delivered_events:
                     return 0
                 self._delivered_events.add(event.event_id)
 
-        # Get event_id for dedup tracking
-        event_id: str = event.event_id or ""
-
-        if not skip_dedup and event_id:
-            async with self._lock:
-                if event_id in self._delivered_events:
-                    return 0
-
-        count = 0
         topic = event.topic or self._topic_for_type(event.type)
 
-        # Track for dedup before sending
-        if not skip_dedup and event_id:
-            async with self._lock:
-                self._delivered_events.add(event_id)
-
-        # The caller must provide the send_function and subscriber lookup.
-        # This method serializes the event. The actual fan-out to
-        # subscribers is handled by the WebSocketManager which provides
-        # the send_function.
-        serialized = self._serializer.serialize_event(
+        # Serialize the event (the actual fan-out to subscribers
+        # is handled by the WebSocketManager which provides send_function)
+        self._serializer.serialize_event(
             event.type,
             event.payload,
             topic=topic,
@@ -126,11 +110,11 @@ class EventBus:
             extra={
                 "type": event.type.value,
                 "topic": topic,
-                "event_id": event_id,
+                "event_id": event.event_id or "",
                 "client_id": event.client_id or "system",
             },
         )
-        return count
+        return 0
 
     async def broadcast(
         self,
@@ -149,13 +133,6 @@ class EventBus:
                 if event.event_id in self._delivered_events:
                     return
                 self._delivered_events.add(event.event_id)
-
-        serialized = self._serializer.serialize_event(
-            event.type,
-            event.payload,
-            topic="*",
-            correlation_id=event.correlation_id,
-        )
 
         logger.debug(
             "event_broadcast",

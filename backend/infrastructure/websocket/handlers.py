@@ -165,8 +165,9 @@ class WebSocketHandler:
             WebSocketError: If client_id doesn't match or send fails
         """
         if client_id != self._client_id:
+            msg = "ERR-WS-ID-MISMATCH"
             raise WebSocketError(
-                "ERR-WS-ID-MISMATCH",
+                msg,
                 f"Client ID mismatch: '{client_id}' != '{self._client_id}'",
             )
 
@@ -176,8 +177,9 @@ class WebSocketHandler:
             else:
                 await self._ws.send_text(data)
         except WebSocketDisconnect as exc:
+            msg = "ERR-WS-CLOSED"
             raise WebSocketError(
-                "ERR-WS-CLOSED",
+                msg,
                 f"Connection closed during send: {exc}",
             ) from exc
 

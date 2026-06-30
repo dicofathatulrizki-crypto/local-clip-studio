@@ -547,23 +547,32 @@ D1 (API Client) → D2-D11 (Components) → D12 (Workspace)
 
 #### Module B3: WebSocket Manager
 
+> **Status:** COMPLETED ✅  
+> **Date:** 2026-06-30  
+> **Tests:** 136/136 passing | Zero mypy errors
+
 | Property | Value |
 |----------|-------|
-| **Responsibilities** | Connection management, channel subscription, event broadcasting |
-| **Dependencies** | A3 (logging) |
-| **Files to create** | `backend/infrastructure/websocket/__init__.py`, `backend/infrastructure/websocket/manager.py`, `backend/infrastructure/websocket/handlers.py` |
+| **Responsibilities** | Connection management, subscription management, typed event bus, heartbeat, progress streaming, security validation, serialization |
+| **Dependencies** | A3 (logging), A2 (config), B1 (domain events) |
+| **Files created** | `backend/infrastructure/websocket/__init__.py`, `connection.py`, `subscription.py`, `event_bus.py`, `heartbeat.py`, `serializer.py`, `security.py`, `progress.py`, `manager.py`, `handlers.py`, `exceptions.py`, `models.py` |
 | **Estimated complexity** | Medium (4-6 hours) |
 | **Blocked by** | A3 |
 
 **Acceptance Criteria:**
-- Accepts WebSocket connections at `/api/v1/ws`
-- Channel subscription: `projects.{id}`, `system`, `jobs.{id}`
-- Event broadcasting to all subscribers
-- Ping/pong keepalive (30s interval, 120s timeout)
-- Cleanup on disconnect
-- Thread-safe connection pool
+- ✅ Connection lifecycle: connect/disconnect/reconnect/shutdown with max client enforcement
+- ✅ Dynamic topic subscriptions: subscribe/unsubscribe, project-level, max per-client enforcement
+- ✅ Strongly typed event bus: publish, broadcast, emit_to_client/project, dedup via event_id
+- ✅ JSON serialization with datetime/UUID/Enum support and schema versioning
+- ✅ Heartbeat: ping/pong, dead detection (3 missed pongs), timeout cleanup, auto-start
+- ✅ Rate limiting: configurable per-client (100 msg/60s window)
+- ✅ Payload validation: size limits (256KB), malformed JSON detection, unknown type rejection
+- ✅ Progress streaming: 7 pipeline operation types with stage-based tracking
+- ✅ FastAPI WebSocket endpoint handler
+- ✅ Thread-safe: asyncio.Lock on all shared state
+- ✅ 136 unit tests passing | Zero mypy errors in websocket module
 
-**Required Tests:** `tests/unit/test_websocket_manager.py`, `tests/integration/test_websocket.py`
+**Required Tests:** `tests/unit/websocket/test_*.py` (9 test files, 136 tests)
 
 ---
 

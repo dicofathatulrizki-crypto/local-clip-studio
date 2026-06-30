@@ -106,43 +106,49 @@ class SecurityValidator:
         try:
             data: dict[str, Any] = json.loads(raw)
         except json.JSONDecodeError as exc:
+            msg = f"Malformed JSON: {exc}"
             raise InvalidMessageError(
-                f"Malformed JSON: {exc}",
+                msg,
                 {"client_id": client_id},
             ) from exc
 
         if not isinstance(data, dict):
+            msg = "Message must be a JSON object"
             raise InvalidMessageError(
-                "Message must be a JSON object",
+                msg,
                 {"client_id": client_id, "actual_type": type(data).__name__},
             )
 
         # 4. Check required fields
         if "type" not in data:
+            msg = "Missing required field: 'type'"
             raise InvalidMessageError(
-                "Missing required field: 'type'",
+                msg,
                 {"client_id": client_id},
             )
 
         msg_type_str = data["type"]
         if not isinstance(msg_type_str, str):
+            msg = "'type' must be a string"
             raise InvalidMessageError(
-                "'type' must be a string",
+                msg,
                 {"client_id": client_id, "type": type(msg_type_str).__name__},
             )
 
         # 5. Check type is allowed
         if msg_type_str not in self._allowed_types:
+            msg = f"Unknown message type: '{msg_type_str}'"
             raise InvalidMessageError(
-                f"Unknown message type: '{msg_type_str}'",
+                msg,
                 {"client_id": client_id, "type": msg_type_str},
             )
 
         # 6. Validate payload structure
         payload = data.get("payload", {})
         if not isinstance(payload, dict):
+            msg = "'payload' must be a JSON object"
             raise InvalidMessageError(
-                "'payload' must be a JSON object",
+                msg,
                 {"client_id": client_id, "payload_type": type(payload).__name__},
             )
 
@@ -150,8 +156,9 @@ class SecurityValidator:
         try:
             msg_type = WebSocketMessageType(msg_type_str)
         except ValueError:
+            msg = f"Invalid message type value: '{msg_type_str}'"
             raise InvalidMessageError(
-                f"Invalid message type value: '{msg_type_str}'",
+                msg,
                 {"client_id": client_id},
             )
 
@@ -178,19 +185,22 @@ class SecurityValidator:
             SubscriptionError: If topic is invalid
         """
         if not topic or not topic.strip():
-            raise SubscriptionError("Topic cannot be empty")
+            msg = "Topic cannot be empty"
+            raise SubscriptionError(msg)
 
         # Check for path traversal in topic names
         if ".." in topic or "/" in topic:
+            msg = f"Invalid topic: '{topic}'"
             raise SubscriptionError(
-                f"Invalid topic: '{topic}'",
+                msg,
                 {"topic": topic},
             )
 
         # Check for overly long topics
         if len(topic) > 256:
+            msg = f"Topic too long: {len(topic)} characters (max 256)"
             raise SubscriptionError(
-                f"Topic too long: {len(topic)} characters (max 256)",
+                msg,
                 {"topic_length": len(topic)},
             )
 
