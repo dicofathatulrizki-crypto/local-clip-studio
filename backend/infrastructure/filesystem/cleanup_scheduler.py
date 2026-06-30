@@ -52,7 +52,7 @@ class CleanupScheduler:
         self._storage_manager = StorageManager(str(self._base))
         self._backup_manager = BackupManager(str(self._base))
         self._running = False
-        self._task: asyncio.Task | None = None
+        self._task: asyncio.Task[None] | None = None
 
     @property
     def is_running(self) -> bool:

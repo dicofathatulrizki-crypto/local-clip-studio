@@ -28,7 +28,7 @@ class ExportStorageManager:
     - Export cleanup
     """
 
-    VALID_FORMATS = {"mp4", "mov", "webm", "srt", "vtt", "ass", "edl", "xml", "json"}
+    VALID_FORMATS = frozenset({"mp4", "mov", "webm", "srt", "vtt", "ass", "edl", "xml", "json"})
 
     def __init__(self, base_path: str | Path | None = None) -> None:
         if base_path:
@@ -60,7 +60,6 @@ class ExportStorageManager:
         clip_name: str,
         export_format: str,
         include_timestamp: bool = True,
-        project_name: str | None = None,
     ) -> str:
         """Generate a formatted export filename following SRS conventions.
 
@@ -71,7 +70,6 @@ class ExportStorageManager:
             clip_name: Name of the clip
             export_format: File extension (mp4, mov, srt, etc.)
             include_timestamp: Include timestamp in filename
-            project_name: Optional project name for directory grouping
         Returns:
             Formatted filename string
         """
@@ -104,10 +102,7 @@ class ExportStorageManager:
             raise ValueError(msg)
 
         filename = self.format_filename(clip_name, export_format)
-        if use_global:
-            base_dir = self.global_exports_dir()
-        else:
-            base_dir = self.project_exports_dir(project_id)
+        base_dir = self.global_exports_dir() if use_global else self.project_exports_dir(project_id)
 
         base_dir.mkdir(parents=True, exist_ok=True)
         return base_dir / filename

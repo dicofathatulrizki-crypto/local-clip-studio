@@ -44,13 +44,13 @@ class CacheManager:
     during periodic cleanup runs.
     """
 
-    DEFAULT_CACHES: dict[str, tuple[int, int]] = {
-        "frames": (10, 7),       # 10 GB, 7 days
-        "audio": (5, 7),         # 5 GB, 7 days
-        "analysis": (1, 30),     # 1 GB, 30 days
-        "thumbnails": (1, 7),    # 1 GB, 7 days
-        "llm": (1, 30),          # 1 GB, 30 days
-    }
+    DEFAULT_CACHES: tuple[tuple[str, int, int], ...] = (
+        ("frames", 10, 7),       # 10 GB, 7 days
+        ("audio", 5, 7),         # 5 GB, 7 days
+        ("analysis", 1, 30),     # 1 GB, 30 days
+        ("thumbnails", 1, 7),    # 1 GB, 7 days
+        ("llm", 1, 30),          # 1 GB, 30 days
+    )
 
     def __init__(
         self,
@@ -58,16 +58,14 @@ class CacheManager:
         custom_configs: dict[str, tuple[int, int]] | None = None,
     ) -> None:
         settings = get_settings()
-        if base_path:
-            base = Path(base_path)
-        else:
-            base = Path(settings.app_directory)
+        base = Path(base_path) if base_path else Path(settings.app_directory)
 
         self._cache_dir = base / "cache"
         self._configs: dict[str, CacheConfig] = {}
 
-        # Merge defaults with overrides
-        configs = {**self.DEFAULT_CACHES, **(custom_configs or {})}
+        # Merge defaults with overrides (convert tuple-based defaults to dict)
+        default_dict: dict[str, tuple[int, int]] = {name: (size, days) for name, size, days in self.DEFAULT_CACHES}
+        configs = {**default_dict, **(custom_configs or {})}
         for name, (size_gb, days) in configs.items():
             self._configs[name] = CacheConfig(
                 name=name,

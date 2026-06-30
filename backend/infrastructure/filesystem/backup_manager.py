@@ -6,10 +6,12 @@ retention, and provides integrity verification for backups.
 """
 from __future__ import annotations
 
+import hashlib
 import json
-import time
+import uuid
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 from backend.config.settings import get_settings
 from backend.infrastructure.filesystem.directory_manager import DirectoryManager
@@ -59,7 +61,7 @@ class BackupManager:
     def create_snapshot(
         self,
         project_id: str,
-        data: dict,
+        data: dict[str, Any],
         snapshot_type: str = "auto",
         description: str | None = None,
     ) -> Path:
@@ -82,15 +84,21 @@ class BackupManager:
         version_dir = self.versions_dir(project_id)
         version_dir.mkdir(parents=True, exist_ok=True)
 
-        # Determine version number
+        # Determine version number (monotonically increasing)
         existing = self.list_snapshots(project_id)
-        version_number = len(existing) + 1
+        max_version = max((s.get("version", 0) for s in existing), default=0)
+        version_number = max_version + 1
 
-        timestamp = int(time.time())
-        filename = f"v_{timestamp}_{snapshot_type}.json"
+        unique_id = uuid.uuid4().hex[:8]
+        filename = f"v_{snapshot_type}_{unique_id}.json"
         snapshot_path = version_dir / filename
 
-        # Build snapshot content
+        # Compute checksum of the data (before serializing the full snapshot
+        # which includes the checksum itself)
+        data_json = json.dumps(data, default=str, sort_keys=True)
+        checksum = hashlib.sha256(data_json.encode()).hexdigest()
+
+        # Build snapshot content with checksum
         snapshot = {
             "version": version_number,
             "type": snapshot_type,
@@ -98,18 +106,10 @@ class BackupManager:
             "created_at": datetime.now(UTC).isoformat(),
             "description": description or f"{snapshot_type} snapshot v{version_number}",
             "data": data,
-            "checksum": None,  # Will be computed after write
+            "checksum": checksum,
         }
 
         # Write snapshot atomically
-        content = json.dumps(snapshot, indent=2, default=str)
-        FileManager.atomic_write(snapshot_path, content)
-
-        # Compute checksum
-        checksum = FileManager.compute_hash(snapshot_path)
-        snapshot["checksum"] = checksum
-
-        # Re-write with checksum
         content = json.dumps(snapshot, indent=2, default=str)
         FileManager.atomic_write(snapshot_path, content)
 
@@ -127,7 +127,7 @@ class BackupManager:
 
         return snapshot_path
 
-    def list_snapshots(self, project_id: str) -> list[dict]:
+    def list_snapshots(self, project_id: str) -> list[dict[str, Any]]:
         """List all snapshots for a project, sorted newest first.
 
         Args:
@@ -159,7 +159,7 @@ class BackupManager:
 
         return snapshots
 
-    def get_snapshot(self, project_id: str, version: int) -> dict | None:
+    def get_snapshot(self, project_id: str, version: int) -> dict[str, Any] | None:
         """Get a specific snapshot by version number.
 
         Args:
@@ -172,12 +172,13 @@ class BackupManager:
             if snap["version"] == version:
                 path = Path(snap["path"])
                 try:
-                    return json.loads(path.read_text())
+                    result: dict[str, Any] = json.loads(path.read_text())
+                    return result
                 except (json.JSONDecodeError, OSError):
                     return None
         return None
 
-    def restore_snapshot(self, project_id: str, version: int) -> dict | None:
+    def restore_snapshot(self, project_id: str, version: int) -> dict[str, Any] | None:
         """Restore a project from a specific snapshot version.
 
         Args:
@@ -221,20 +222,30 @@ class BackupManager:
     def verify_snapshot(self, project_id: str, version: int) -> bool:
         """Verify the integrity of a snapshot by checking its checksum.
 
+        Computes the checksum of the data field and compares it
+        against the stored checksum value.
+
         Args:
             project_id: UUID of the project
             version: Version number
         Returns:
             True if checksum matches
         """
-        # Use list_snapshots to find the file path
         for snap in self.list_snapshots(project_id):
             if snap["version"] == version:
                 path = Path(snap["path"])
-                expected = snap.get("checksum", "")
+                try:
+                    data = json.loads(path.read_text())
+                except (json.JSONDecodeError, OSError):
+                    return False
+                expected = data.get("checksum", "")
                 if not expected:
                     return False
-                return FileManager.verify_hash(path, expected)
+                # Recompute checksum from the stored data
+                stored_data = data.get("data", {})
+                data_json = json.dumps(stored_data, default=str, sort_keys=True)
+                actual = hashlib.sha256(data_json.encode()).hexdigest()
+                return actual == expected  # type: ignore[no-any-return]
         return False
 
     def get_usage(self, project_id: str | None = None) -> dict[str, object]:

@@ -15,9 +15,15 @@ import hashlib
 import os
 import shutil
 import tempfile
+import time
 from collections.abc import Callable
 from pathlib import Path
 
+# aiofiles is an optional dependency for async file I/O
+try:
+    import aiofiles
+except ImportError:
+    aiofiles = None  # type: ignore[assignment,unused-ignore]
 from backend.infrastructure.logging.logger import get_logger
 
 logger = get_logger(__name__)
@@ -199,7 +205,10 @@ class FileManager:
         try:
             # Copy to temporary file first, then rename
             fd, tmp_path = tempfile.mkstemp(dir=str(dst_path.parent), prefix=".tmp_")
-            with os.fdopen(fd, "wb") as tmp, open(src_path, "rb") as src_file:
+            with (
+                os.fdopen(fd, "wb") as tmp,
+                open(src_path, "rb") as src_file,
+            ):
                 while True:
                     chunk = src_file.read(FileManager.DEFAULT_COPY_BUFFER)
                     if not chunk:
@@ -299,7 +308,6 @@ class FileManager:
                 if attempt == max_retries - 1:
                     msg = f"Failed to delete {path} after {max_retries} attempts: {exc}"
                     raise FileOperationError(msg) from exc
-                import time
 
                 time.sleep(0.1 * (attempt + 1))
 
@@ -317,10 +325,13 @@ class FileManager:
         Returns:
             File contents as string
         """
-        import aiofiles
+        if aiofiles is None:
+            msg = "aiofiles is not installed. Install with: pip install aiofiles"
+            raise ImportError(msg)
 
         async with aiofiles.open(path, encoding=encoding) as f:
-            return await f.read()
+            result = await f.read()
+            return result  # type: ignore[no-any-return]
 
     @staticmethod
     async def async_write(
@@ -333,7 +344,9 @@ class FileManager:
             content: Content to write
             encoding: Encoding for string content
         """
-        import aiofiles
+        if aiofiles is None:
+            msg = "aiofiles is not installed. Install with: pip install aiofiles"
+            raise ImportError(msg)
 
         target = Path(path)
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -360,7 +373,9 @@ class FileManager:
         Returns:
             Total bytes copied
         """
-        import aiofiles
+        if aiofiles is None:
+            msg = "aiofiles is not installed. Install with: pip install aiofiles"
+            raise ImportError(msg)
 
         src_path = Path(src)
         dst_path = Path(dst)
@@ -369,8 +384,10 @@ class FileManager:
         total_bytes = src_path.stat().st_size
         copied = 0
 
-        async with aiofiles.open(src_path, "rb") as src_file:
-            async with aiofiles.open(dst_path, "wb") as dst_file:
+        async with (
+            aiofiles.open(src_path, "rb") as src_file,
+            aiofiles.open(dst_path, "wb") as dst_file,
+        ):
                 while True:
                     chunk = await src_file.read(FileManager.DEFAULT_COPY_BUFFER)
                     if not chunk:

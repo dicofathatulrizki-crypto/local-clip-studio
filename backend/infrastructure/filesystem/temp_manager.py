@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 from backend.config.settings import get_settings
 from backend.infrastructure.filesystem.file_manager import FileManager
@@ -89,8 +90,6 @@ class TemporaryStorageManager:
         Returns:
             Temporary file path for the download
         """
-        from urllib.parse import urlparse
-
         parsed = urlparse(url)
         ext = Path(parsed.path).suffix or ".tmp"
         return self.create_temp_path(subdir="downloads", suffix=ext)
@@ -170,13 +169,13 @@ class TemporaryStorageManager:
         )
         return removed
 
-    def get_usage(self) -> dict:
+    def get_usage(self) -> dict[str, dict[str, int]]:
         """Get current temporary storage usage.
 
         Returns:
             Dict with size_bytes, file_count per subdirectory
         """
-        result = {}
+        result: dict[str, dict[str, int]] = {}
         for subdir in self.SUBDIRS:
             dir_path = self._temp_dir / subdir
             result[subdir] = {
