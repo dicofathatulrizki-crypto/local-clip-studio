@@ -11,6 +11,8 @@ from backend.infrastructure.ffmpeg.command import CommandBuilder
 from backend.infrastructure.ffmpeg.process import ProcessRunner
 from backend.infrastructure.ffmpeg.types import FrameExtractParams
 
+__all__ = ["FrameExtractParams", "FrameExtractor", "FrameResult"]
+
 
 class FrameExtractor:
     """Extracts frames from video files as images.

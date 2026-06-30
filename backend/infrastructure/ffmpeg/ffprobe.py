@@ -108,7 +108,8 @@ class FFprobeService:
             if result.returncode != 0:
                 return {}
             data = json.loads(result.stdout)
-            return data.get("format", {})
+            fmt: dict[str, Any] = data.get("format", {})
+            return fmt
         except Exception:
             return {}
 
@@ -140,7 +141,8 @@ class FFprobeService:
             if result.returncode != 0:
                 return []
             data = json.loads(result.stdout)
-            return data.get("streams", [])
+            streams_list: list[dict[str, Any]] = data.get("streams", [])
+            return streams_list
         except Exception:
             return []
 

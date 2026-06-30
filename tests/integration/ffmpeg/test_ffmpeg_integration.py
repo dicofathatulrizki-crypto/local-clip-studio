@@ -6,16 +6,15 @@ with documented reasons.
 """
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from backend.infrastructure.ffmpeg.audio import AudioExtractor, AudioParams
 from backend.infrastructure.ffmpeg.command import CommandBuilder
 from backend.infrastructure.ffmpeg.errors import (
+    FFmpegCodecError,
     FFmpegError,
     FFmpegFormatError,
     FFmpegIntegrityError,
@@ -24,17 +23,15 @@ from backend.infrastructure.ffmpeg.errors import (
     FFmpegTimeoutError,
     translate_error,
 )
-from backend.infrastructure.ffmpeg.export import ExportEncoder, GpuEncoderSelector
+from backend.infrastructure.ffmpeg.export import GpuEncoderSelector
 from backend.infrastructure.ffmpeg.ffprobe import FFprobeService
-from backend.infrastructure.ffmpeg.frame import FrameExtractor, FrameExtractParams
 from backend.infrastructure.ffmpeg.locate import FFmpegCapabilities, FFmpegLocator
 from backend.infrastructure.ffmpeg.manager import FFmpegManager
 from backend.infrastructure.ffmpeg.process import ProcessResult, ProcessRunner
-from backend.infrastructure.ffmpeg.progress import MediaProgress, ProgressParser
-from backend.infrastructure.ffmpeg.proxy import ProxyGenerator, ProxyParams
+from backend.infrastructure.ffmpeg.progress import ProgressParser
 from backend.infrastructure.ffmpeg.scene import SceneExtractionHelper, SceneInfo
-from backend.infrastructure.ffmpeg.thumbnail import ThumbnailGenerator, ThumbnailParams
-from backend.infrastructure.ffmpeg.types import VideoFilters, ExportParams
+from backend.infrastructure.ffmpeg.thumbnail import ThumbnailParams
+from backend.infrastructure.ffmpeg.types import ExportParams, VideoFilters
 from backend.infrastructure.ffmpeg.video_info import VideoInfoExtractor
 
 # ─── Fixtures ────────────────────────────────────────────────

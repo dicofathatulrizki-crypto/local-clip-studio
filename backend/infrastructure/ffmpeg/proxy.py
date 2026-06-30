@@ -12,6 +12,8 @@ from backend.infrastructure.ffmpeg.command import CommandBuilder
 from backend.infrastructure.ffmpeg.process import ProcessRunner
 from backend.infrastructure.ffmpeg.types import ProxyParams
 
+__all__ = ["ProxyGenerator", "ProxyParams", "ProxyResult"]
+
 
 class ProxyGenerator:
     """Generates proxy videos from source media.

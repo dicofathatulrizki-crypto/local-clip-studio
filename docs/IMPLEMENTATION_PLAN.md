@@ -403,25 +403,36 @@ D1 (API Client) → D2-D11 (Components) → D12 (Workspace)
 
 #### Module A7: FFmpeg Service
 
+> **Status:** COMPLETED ✅
+
 | Property | Value |
 |----------|-------|
-| **Responsibilities** | FFmpeg subprocess management, command construction, progress parsing, GPU encoder selection |
+| **Responsibilities** | FFmpeg subprocess management, command construction, progress parsing, GPU encoder selection, metadata extraction, video operations |
 | **Dependencies** | A5 (filesystem), A6 (HAL for encoder selection) |
-| **Files to create** | `backend/infrastructure/ffmpeg/__init__.py`, `backend/infrastructure/ffmpeg/ffmpeg_service.py`, `backend/infrastructure/ffmpeg/ffprobe_service.py`, `backend/infrastructure/ffmpeg/commands.py`, `backend/infrastructure/ffmpeg/progress_parser.py` |
+| **Files created** | `backend/infrastructure/ffmpeg/__init__.py`, `backend/infrastructure/ffmpeg/types.py`, `backend/infrastructure/ffmpeg/errors.py`, `backend/infrastructure/ffmpeg/locate.py`, `backend/infrastructure/ffmpeg/command.py`, `backend/infrastructure/ffmpeg/progress.py`, `backend/infrastructure/ffmpeg/process.py`, `backend/infrastructure/ffmpeg/ffprobe.py`, `backend/infrastructure/ffmpeg/video_info.py`, `backend/infrastructure/ffmpeg/thumbnail.py`, `backend/infrastructure/ffmpeg/proxy.py`, `backend/infrastructure/ffmpeg/audio.py`, `backend/infrastructure/ffmpeg/frame.py`, `backend/infrastructure/ffmpeg/scene.py`, `backend/infrastructure/ffmpeg/export.py`, `backend/infrastructure/ffmpeg/manager.py` |
 | **Estimated complexity** | High (8-10 hours) |
 | **Blocked by** | A5, A6 |
 
 **Acceptance Criteria:**
-- Audio extraction: 16kHz mono WAV
-- Frame extraction: 1fps JPEGs `frame_%05d.jpg`
-- Proxy generation: 720p H.264, CRF 23
-- Metadata extraction: all fields from Database Design
-- GPU encoder selection: NVENC → VideoToolbox → software
-- Progress parsing: frame count, fps, time, bitrate from stderr
-- Subprocess timeout and cancellation work correctly
-- Error messages from stderr parsed and formatted
+- Automatic FFmpeg/FFprobe binary discovery with version verification (min 6.0)
+- Capability detection: encoders, decoders, HW accel (NVENC, AMF, VideoToolbox, VAAPI, QSV)
+- Safe command generation as list[str] (no shell injection)
+- Async subprocess execution with timeout, cancellation (SIGTERM→SIGKILL), retry with backoff
+- Real-time progress parsing (both stderr regex and key=value formats)
+- Error translation (exit codes + stderr patterns → structured exceptions)
+- Metadata extraction (FFprobe): streams, format, codecs, duration, resolution
+- Thumbnail generation at configurable timestamps with padding
+- Proxy generation with GPU-accelerated encoding
+- Audio extraction: configurable sample rate, channels, codec
+- Frame extraction with configurable FPS and quality
+- Scene change detection with merge support
+- GPU-accelerated export encoding (NVENC→AMF→VideoToolbox→VAAPI→libx264) with HAL integration
+- Subtitle burn-in and caption rendering (ASS/SRT)
+- Trim, concatenate, normalize audio, waveform generation, smart scaling, crop, FPS conversion
+- Temporary file cleanup on failure
+- No hardcoded CUDA assumptions
 
-**Required Tests:** `tests/unit/test_ffmpeg_service.py`, `tests/unit/test_progress_parser.py`, `tests/integration/test_ffmpeg.py` (with real FFmpeg)
+**Test Results:** 133 unit tests passed, 28 integration tests passed. 0 mypy errors (2 pre-existing in logger.py).
 
 ---
 

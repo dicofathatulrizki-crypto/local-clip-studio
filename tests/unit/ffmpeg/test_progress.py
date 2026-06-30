@@ -1,8 +1,6 @@
 """Unit tests for ProgressParser."""
 from __future__ import annotations
 
-import pytest
-
 from backend.infrastructure.ffmpeg.progress import MediaProgress, ProgressParser
 
 

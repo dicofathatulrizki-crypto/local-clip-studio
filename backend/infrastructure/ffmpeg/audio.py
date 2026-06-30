@@ -12,6 +12,8 @@ from backend.infrastructure.ffmpeg.command import CommandBuilder
 from backend.infrastructure.ffmpeg.process import ProcessRunner
 from backend.infrastructure.ffmpeg.types import AudioParams
 
+__all__ = ["AudioExtractor", "AudioParams", "AudioResult"]
+
 
 class AudioExtractor:
     """Extracts audio from video files.

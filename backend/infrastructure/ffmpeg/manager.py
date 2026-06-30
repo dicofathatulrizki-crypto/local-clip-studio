@@ -23,7 +23,7 @@ from typing import Any
 
 from backend.infrastructure.ffmpeg.audio import AudioExtractor, AudioParams, AudioResult
 from backend.infrastructure.ffmpeg.command import CommandBuilder
-from backend.infrastructure.ffmpeg.export import ExportEncoder, ExportParams, ExportResult
+from backend.infrastructure.ffmpeg.export import ExportEncoder, ExportParams, ExportResult, GpuEncoderSelector
 from backend.infrastructure.ffmpeg.ffprobe import FFprobeService
 from backend.infrastructure.ffmpeg.frame import FrameExtractor, FrameExtractParams, FrameResult
 from backend.infrastructure.ffmpeg.locate import FFmpegCapabilities, FFmpegLocator

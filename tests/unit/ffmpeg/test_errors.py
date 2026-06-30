@@ -1,8 +1,6 @@
 """Unit tests for FFmpeg error translation."""
 from __future__ import annotations
 
-import pytest
-
 from backend.infrastructure.ffmpeg.errors import (
     FFmpegCodecError,
     FFmpegError,

@@ -41,6 +41,7 @@ class TestFFprobeService:
         probe = FFprobeService()
         probe._available = True
         mock_output = {
+            "format": {
                 "format_name": "mp4",
                 "format_long_name": "QuickTime / MOV",
                 "size": "1024000",
@@ -75,7 +76,7 @@ class TestFFprobeService:
             ],
         }
 
-        with patch.object(probe, "is_available", return_value=True):
+        with patch("subprocess.run") as mock_run:
             with patch("subprocess.run") as mock_run:
                 mock_result = MagicMock()
                 mock_result.returncode = 0
