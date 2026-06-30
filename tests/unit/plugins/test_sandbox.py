@@ -5,9 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+
 from backend.infrastructure.plugins.errors import PluginPermissionError
 from backend.infrastructure.plugins.sandbox import PluginSandbox
-from backend.infrastructure.plugins.types import Permission, PluginManifest
+from backend.infrastructure.plugins.types import Permission, PluginManifest, PluginModelInfo
 
 
 class TestPluginSandbox:
@@ -106,7 +107,7 @@ class TestPluginSandbox:
         manifest = PluginManifest(
             id="model-plugin",
             permissions=[Permission.MODEL_ACCESS],
-            models=[{"id": "whisper-large", "size_mb": 3000}],
+            models=[PluginModelInfo(id="whisper-large", size_mb=3000)],
         )
         self.sandbox.grant_permissions("model-plugin", [Permission.MODEL_ACCESS])
         assert self.sandbox.validate_model_access(manifest, "whisper-large") is True
@@ -115,7 +116,7 @@ class TestPluginSandbox:
         manifest = PluginManifest(
             id="model-plugin",
             permissions=[Permission.MODEL_ACCESS],
-            models=[{"id": "whisper-large"}],
+            models=[PluginModelInfo(id="whisper-large")],
         )
         self.sandbox.grant_permissions("model-plugin", [Permission.MODEL_ACCESS])
         with pytest.raises(PluginPermissionError, match="not declared"):

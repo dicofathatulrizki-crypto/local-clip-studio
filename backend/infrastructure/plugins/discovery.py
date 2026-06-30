@@ -10,12 +10,14 @@ Supports:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
-from backend.infrastructure.plugins.errors import PluginDuplicateError, PluginManifestError, translate_plugin_error
-from backend.infrastructure.plugins.manifest import PluginManifestParser
-from backend.infrastructure.plugins.types import PluginManifest, PluginState
 from backend.infrastructure.logging.logger import get_logger
+from backend.infrastructure.plugins.errors import (
+    PluginDuplicateError,
+    PluginManifestError,
+)
+from backend.infrastructure.plugins.manifest import PluginManifestParser
+from backend.infrastructure.plugins.types import PluginManifest
 
 logger = get_logger(__name__)
 

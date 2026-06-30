@@ -6,6 +6,7 @@ import asyncio
 from pathlib import Path
 
 import pytest
+
 from backend.infrastructure.plugins.manager import PluginManager
 from backend.infrastructure.plugins.types import (
     PluginInstance,

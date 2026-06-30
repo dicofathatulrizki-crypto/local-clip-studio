@@ -9,7 +9,6 @@ Plugins never gain unrestricted access to the application. The sandbox:
 """
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import Any
 
@@ -142,23 +141,33 @@ class PluginSandbox:
         import urllib.parse
 
         parsed = urllib.parse.urlparse(url)
+        host = parsed.hostname or ""
+        is_local = host in ("localhost", "127.0.0.1", "::1")
 
-        # Check network permission
-        if Permission.NETWORK in manifest.permissions:
-            self.check_permission(manifest, Permission.NETWORK)
-            return True
-
-        # Check localhost-only permission
-        if Permission.NETWORK_LOCALHOST in manifest.permissions:
-            self.check_permission(manifest, Permission.NETWORK_LOCALHOST)
-            host = parsed.hostname or ""
-            if host in ("localhost", "127.0.0.1", "::1"):
+        if is_local:
+            # Localhost: NETWORK_LOCALHOST (specific) or NETWORK (superset)
+            if Permission.NETWORK_LOCALHOST in manifest.permissions:
+                self.check_permission(manifest, Permission.NETWORK_LOCALHOST)
                 return True
-            raise PluginPermissionError(
-                f"Plugin '{manifest.id}' attempted to access '{url}' "
-                f"which is not localhost (only localhost network allowed)",
-                manifest.id,
-            )
+            if Permission.NETWORK in manifest.permissions:
+                self.check_permission(manifest, Permission.NETWORK)
+                return True
+        else:
+            # External: only full NETWORK permission works
+            granted = self._granted_permissions.get(manifest.id, set())
+            if Permission.NETWORK in manifest.permissions and Permission.NETWORK in granted:
+                self.check_permission(manifest, Permission.NETWORK)
+                return True
+            # If only NETWORK_LOCALHOST is granted, reject with localhost hint
+            if Permission.NETWORK_LOCALHOST in manifest.permissions and Permission.NETWORK_LOCALHOST in granted:
+                raise PluginPermissionError(
+                    f"Plugin '{manifest.id}' attempted to access '{url}' "
+                    f"which is not localhost (only localhost network allowed)",
+                    manifest.id,
+                )
+            # Check-declared-but-not-granted for NETWORK
+            if Permission.NETWORK in manifest.permissions:
+                self.check_permission(manifest, Permission.NETWORK)
 
         raise PluginPermissionError(
             f"Plugin '{manifest.id}' attempted network access to '{url}' "

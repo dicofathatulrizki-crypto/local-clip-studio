@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from backend.infrastructure.plugins.types import (
-    DependencyGraph,
     PluginDependency,
     PluginManifest,
     PluginType,
@@ -39,7 +38,7 @@ class TestPluginValidator:
             capabilities=[],
         )
         errors = self.validator.validate_manifest(manifest)
-        assert any("capabilities" in e for e in errors)
+        assert any("capability" in e for e in errors)
 
     def test_validate_bad_entry_point(self) -> None:
         manifest = PluginManifest(

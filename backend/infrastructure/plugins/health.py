@@ -10,7 +10,6 @@ import time
 from typing import Any
 
 from backend.infrastructure.logging.logger import get_logger
-from backend.infrastructure.plugins.errors import PluginRuntimeError
 from backend.infrastructure.plugins.types import PluginInstance, PluginState
 
 logger = get_logger(__name__)
@@ -80,8 +79,8 @@ class PluginHealthChecker:
                 extra={"plugin_id": instance.manifest.id, "error": str(exc)},
             )
 
-        self._results[instance.manifest.id] = result
-        return result
+        self._results[instance.manifest.id] = health_result
+        return health_result
 
     async def check_all(self, instances: list[PluginInstance]) -> dict[str, dict[str, Any]]:
         """Run health checks on all provided plugin instances.
@@ -126,7 +125,8 @@ class PluginHealthChecker:
             True if the last health check returned 'ok'.
         """
         result = self._results.get(plugin_id, {})
-        return result.get("status") == "ok" or result.get("status") is None
+        status = result.get("status")
+        return bool(status == "ok" or status is None)
 
     def is_available(self, plugin_id: str) -> bool:
         """Check if a plugin is available (healthy or hasn't been checked yet).
@@ -141,7 +141,7 @@ class PluginHealthChecker:
         status = result.get("status")
         if status is None:
             return True  # No check yet, assume available
-        return status == "ok"
+        return bool(status == "ok")
 
     async def start_periodic_checks(
         self,

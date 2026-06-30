@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-import asyncio
-
 import pytest
+
 from backend.infrastructure.plugins.errors import PluginNotFoundError
 from backend.infrastructure.plugins.registry import PluginRegistry
 from backend.infrastructure.plugins.types import (
+    Permission,
     PluginInstance,
     PluginManifest,
     PluginState,
@@ -35,7 +35,7 @@ class TestPluginRegistry:
     def test_get_info(self) -> None:
         manifest = PluginManifest(
             id="info-plugin", name="Info", plugin_type=PluginType.LLM,
-            capabilities=["chat"], permissions=["gpu", "network"],
+            capabilities=["chat"], permissions=[Permission.GPU, Permission.NETWORK],
             config_schema={"key": {"type": "string"}},
         )
         instance = PluginInstance(manifest=manifest, state=PluginState.ACTIVE, enabled=True,

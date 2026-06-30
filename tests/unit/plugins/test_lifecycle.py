@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+
 from backend.infrastructure.plugins.errors import PluginRuntimeError
 from backend.infrastructure.plugins.lifecycle import PluginLifecycleManager
 from backend.infrastructure.plugins.types import PluginInstance, PluginManifest, PluginState

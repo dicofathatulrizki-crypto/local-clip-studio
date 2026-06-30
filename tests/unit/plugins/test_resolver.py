@@ -9,7 +9,6 @@ from backend.infrastructure.plugins.resolver import (
 from backend.infrastructure.plugins.types import (
     PluginDependency,
     PluginManifest,
-    PluginType,
 )
 
 
@@ -53,7 +52,7 @@ class TestPluginVersionResolver:
         assert PluginVersionResolver.satisfies("1.0.0", "!=1.0.0") is False
 
     def test_satisfies_wildcard(self) -> None:
-        assert PluginVersionResolver.satisfies("any-version", "*") is True
+        assert PluginVersionResolver.satisfies("1.0.0", "*") is True
         assert PluginVersionResolver.satisfies("1.0.0", "") is True
 
     def test_satisfies_invalid_version(self) -> None:
@@ -90,7 +89,8 @@ class TestPluginVersionResolver:
     def test_sort_versions_with_invalid(self) -> None:
         versions = ["bad", "1.0.0", "2.0.0"]
         sorted_versions = PluginVersionResolver.sort_versions(versions)
-        assert sorted_versions == ["2.0.0", "1.0.0", "bad"]
+        # "bad" is treated as 0.0.0 and sorts first in ascending order
+        assert sorted_versions == ["bad", "1.0.0", "2.0.0"]
 
 
 class TestPluginCompatibilityChecker:

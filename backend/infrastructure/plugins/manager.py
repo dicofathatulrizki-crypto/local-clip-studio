@@ -7,7 +7,6 @@ Composes all plugin services into a single API:
 """
 from __future__ import annotations
 
-import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -15,16 +14,16 @@ from backend.infrastructure.logging.logger import get_logger
 from backend.infrastructure.plugins.cache import PluginCache
 from backend.infrastructure.plugins.discovery import PluginDiscovery
 from backend.infrastructure.plugins.errors import (
+    PluginDuplicateError,
     PluginError,
-    PluginLoadError,
-    PluginNotFoundError,
-    translate_plugin_error,
 )
 from backend.infrastructure.plugins.health import PluginHealthChecker
 from backend.infrastructure.plugins.lifecycle import PluginLifecycleManager
 from backend.infrastructure.plugins.loader import PluginLoader
 from backend.infrastructure.plugins.registry import PluginRegistry
-from backend.infrastructure.plugins.resolver import PluginCompatibilityChecker, PluginVersionResolver
+from backend.infrastructure.plugins.resolver import (
+    PluginCompatibilityChecker,
+)
 from backend.infrastructure.plugins.sandbox import PluginSandbox
 from backend.infrastructure.plugins.types import (
     DependencyGraph,
@@ -140,8 +139,13 @@ class PluginManager:
         if allowed_dirs:
             self._sandbox.set_allowed_directories(allowed_dirs)
 
-        # Step 1: Discover
-        manifests = self._discovery.discover_all()
+        # Step 1: Discover (catch duplicates gracefully)
+        try:
+            manifests = self._discovery.discover_all()
+        except PluginDuplicateError as exc:
+            logger.warning("Duplicate plugin detected during discovery", extra={"error": str(exc)})
+            manifests = self._discovery.discover_builtin() + self._discovery.discover_external()
+
         logger.info("Plugin discovery complete", extra={"count": len(manifests)})
 
         # Step 2: Validate and register

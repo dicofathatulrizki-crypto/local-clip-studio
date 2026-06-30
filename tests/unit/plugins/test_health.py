@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 
-import pytest
 from backend.infrastructure.plugins.health import PluginHealthChecker
 from backend.infrastructure.plugins.types import PluginInstance, PluginManifest, PluginState
 

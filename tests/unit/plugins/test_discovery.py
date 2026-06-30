@@ -6,9 +6,9 @@ import json
 from pathlib import Path
 
 import pytest
+
 from backend.infrastructure.plugins.discovery import PluginDiscovery
 from backend.infrastructure.plugins.errors import PluginDuplicateError
-from backend.infrastructure.plugins.manifest import PluginManifestParser
 
 
 class TestPluginDiscovery:

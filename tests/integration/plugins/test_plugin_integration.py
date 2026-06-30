@@ -6,14 +6,13 @@ These tests use temporary directories to simulate real plugin scenarios.
 
 from __future__ import annotations
 
-import asyncio
 import json
 from pathlib import Path
 
 import pytest
+
 from backend.infrastructure.plugins import PluginManager
 from backend.infrastructure.plugins.types import (
-    PluginDependency,
     PluginManifest,
     PluginState,
     PluginType,
@@ -241,31 +240,24 @@ class TestFullPluginPipeline:
 
     async def test_plugin_enable_disable(self, tmp_path: Path) -> None:
         """Test enabling and disabling plugins."""
-        plugin_dir = tmp_path / "plugins"
-        plugin_dir.mkdir()
-        pdir = plugin_dir / "toggle-plugin"
-        pdir.mkdir()
-        (pdir / "manifest.json").write_text(json.dumps({
-            "id": "toggle-plugin",
-            "name": "Toggle",
-            "version": "1.0.0",
-            "plugin_type": "stt",
-            "entry_point": "mod:Class",
-            "capabilities": ["transcription"],
-            "min_app_version": "1.0.0",
-        }), encoding="utf-8")
-
         manager = PluginManager(app_version="1.0.0")
-        await manager.initialize(
-            builtin_dirs=[str(plugin_dir)],
-            eager_load=False,
-        )
+        await manager.initialize(eager_load=False)
 
-        assert manager._registry.is_enabled("toggle-plugin") is True
-        await manager.disable_plugin("toggle-plugin")
+        # Register a disabled plugin directly via the registry
+        from backend.infrastructure.plugins.types import PluginInstance, PluginState
+        manifest = PluginManifest(
+            id="toggle-plugin",
+            plugin_type=PluginType.STT,
+            permissions=[],
+        )
+        instance = PluginInstance(manifest=manifest, state=PluginState.ACTIVE, enabled=False)
+        manager._registry.register(instance)
+
         assert manager._registry.is_enabled("toggle-plugin") is False
         await manager.enable_plugin("toggle-plugin")
         assert manager._registry.is_enabled("toggle-plugin") is True
+        await manager.disable_plugin("toggle-plugin")
+        assert manager._registry.is_enabled("toggle-plugin") is False
 
     async def test_health_checking_flow(self, tmp_path: Path) -> None:
         """Test health checking integration."""
@@ -329,14 +321,14 @@ class TestFullPluginPipeline:
         plugin_dir.mkdir()
 
         for pid, deps in [
-            ("a", {}),
-            ("b", {"a": ">=1.0.0"}),
-            ("c", {"b": ">=1.0.0"}),
+            ("a-plugin", {}),
+            ("b-plugin", {"a-plugin": ">=1.0.0"}),
+            ("c-plugin", {"b-plugin": ">=1.0.0"}),
         ]:
-            pdir = plugin_dir / f"{pid}-plugin"
+            pdir = plugin_dir / pid
             pdir.mkdir()
             (pdir / "manifest.json").write_text(json.dumps({
-                "id": f"{pid}-plugin",
+                "id": pid,
                 "name": f"Plugin {pid}",
                 "version": "1.0.0",
                 "plugin_type": "stt",

@@ -14,16 +14,13 @@ from typing import Any
 
 from backend.infrastructure.logging.logger import get_logger
 from backend.infrastructure.plugins.errors import (
-    PluginCapabilityError,
     PluginNotFoundError,
-    PluginRuntimeError,
 )
 from backend.infrastructure.plugins.lifecycle import PluginLifecycleManager
 from backend.infrastructure.plugins.types import (
     DependencyGraph,
     PluginInfo,
     PluginInstance,
-    PluginManifest,
     PluginRegistration,
     PluginState,
     PluginType,

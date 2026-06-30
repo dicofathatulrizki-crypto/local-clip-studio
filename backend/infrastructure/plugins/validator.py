@@ -15,18 +15,9 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-from backend.infrastructure.plugins.errors import (
-    PluginCapabilityError,
-    PluginDependencyError,
-    PluginDuplicateError,
-    PluginIntegrityError,
-    PluginManifestError,
-    PluginVersionError,
-)
 from backend.infrastructure.plugins.types import (
     DependencyGraph,
     PluginManifest,
-    PluginState,
     PluginType,
 )
 
@@ -314,7 +305,7 @@ class PluginValidator:
 
         Supports: '>=1.0.0', '^1.0.0', '~1.0.0', '1.0.0'.
         """
-        from packaging.version import Version, InvalidVersion
+        from packaging.version import InvalidVersion, Version
         try:
             ver = Version(version)
         except InvalidVersion:

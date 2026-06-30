@@ -37,11 +37,26 @@ from backend.infrastructure.plugins.errors import (
     translate_plugin_error,
 )
 from backend.infrastructure.plugins.health import PluginHealthChecker
+
+# ─── Provider Interfaces ──────────────────────────────────
+# Imported for convenience — users can access them here or
+# import directly from the interfaces sub-package.
+from backend.infrastructure.plugins.interfaces import (
+    CaptionProvider,
+    ExportProvider,
+    LLMProvider,
+    STTProvider,
+    TranslationProvider,
+    VisionProvider,
+)
 from backend.infrastructure.plugins.lifecycle import PluginLifecycleManager
 from backend.infrastructure.plugins.loader import PluginLoader
 from backend.infrastructure.plugins.manager import PluginManager
 from backend.infrastructure.plugins.registry import PluginRegistry
-from backend.infrastructure.plugins.resolver import PluginCompatibilityChecker, PluginVersionResolver
+from backend.infrastructure.plugins.resolver import (
+    PluginCompatibilityChecker,
+    PluginVersionResolver,
+)
 from backend.infrastructure.plugins.sandbox import PluginSandbox
 from backend.infrastructure.plugins.types import (
     DependencyGraph,
@@ -53,18 +68,6 @@ from backend.infrastructure.plugins.types import (
     PluginType,
 )
 from backend.infrastructure.plugins.validator import PluginValidator
-
-# ─── Provider Interfaces ──────────────────────────────────
-# Imported for convenience — users can access them here or
-# import directly from the interfaces sub-package.
-from backend.infrastructure.plugins.interfaces import (
-    STTProvider,
-    VisionProvider,
-    LLMProvider,
-    CaptionProvider,
-    TranslationProvider,
-    ExportProvider,
-)
 
 __all__ = [
     # Manager

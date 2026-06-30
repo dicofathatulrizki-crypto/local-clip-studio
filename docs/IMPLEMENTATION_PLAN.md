@@ -438,25 +438,41 @@ D1 (API Client) → D2-D11 (Components) → D12 (Workspace)
 
 #### Module A8: Plugin Registry
 
+> **Status:** COMPLETED ✅
+
 | Property | Value |
 |----------|-------|
-| **Responsibilities** | Plugin discovery, manifest validation, loading, registration, health checks, shutdown |
+| **Responsibilities** | Plugin discovery, manifest validation, loading, registration, lifecycle, health checks, sandbox, caching, provider routing |
 | **Dependencies** | A5 (filesystem), A3 (logging) |
-| **Files to create** | `backend/infrastructure/plugins/__init__.py`, `backend/infrastructure/plugins/registry.py`, `backend/infrastructure/plugins/loader.py`, `backend/infrastructure/plugins/interfaces/__init__.py`, `backend/infrastructure/plugins/interfaces/stt_provider.py`, `backend/infrastructure/plugins/interfaces/llm_provider.py`, `backend/infrastructure/plugins/interfaces/vision_provider.py`, `backend/infrastructure/plugins/interfaces/caption_provider.py`, `backend/infrastructure/plugins/interfaces/translation_provider.py`, `backend/infrastructure/plugins/interfaces/export_provider.py` |
+| **Files created** | `backend/infrastructure/plugins/__init__.py`, `backend/infrastructure/plugins/types.py`, `backend/infrastructure/plugins/errors.py`, `backend/infrastructure/plugins/manifest.py`, `backend/infrastructure/plugins/discovery.py`, `backend/infrastructure/plugins/validator.py`, `backend/infrastructure/plugins/resolver.py`, `backend/infrastructure/plugins/loader.py`, `backend/infrastructure/plugins/sandbox.py`, `backend/infrastructure/plugins/cache.py`, `backend/infrastructure/plugins/health.py`, `backend/infrastructure/plugins/lifecycle.py`, `backend/infrastructure/plugins/registry.py`, `backend/infrastructure/plugins/manager.py`, `backend/infrastructure/plugins/interfaces/__init__.py`, `backend/infrastructure/plugins/builtins/__init__.py` |
 | **Estimated complexity** | High (8-10 hours) |
 | **Blocked by** | A5, A3 |
 
 **Acceptance Criteria:**
 - Discovers plugins from builtins/ and ~/.localclip/plugins/
-- Validates manifest JSON against schema
-- Rejects plugins with incompatible versions
+- Validates manifest JSON against schema (id, name, version, entry_point, capabilities, permissions, dependencies)
+- Rejects plugins with incompatible versions (min/max app version constraints)
+- Rejects plugins with missing dependencies
+- Detects cyclic dependencies and duplicate plugin IDs
 - Loads entry point and instantiates plugin class
-- Registers by type in the registry
+- Lazy and eager loading, unload, reload, hot reload (development)
+- Registers by type in the registry with priority-based sorting
 - `get_best_provider(type)` returns highest-priority active provider
-- Health checks run on schedule
+- `get_fallback_chain(type)` returns providers in fallback order
+- Permission enforcement via PluginSandbox (GPU, network, filesystem, model access)
+- Network access control (full vs localhost-only)
+- Health checks run on schedule (periodic async checks)
+- Lifecycle management (DISCOVERED→LOADED→INITIALIZED→ACTIVE→SHUTDOWN)
+- LRU cache with TTL for loaded plugin instances
 - Failed plugins don't crash the application
+- All 6 provider interfaces defined: STT, Vision, LLM, Caption, Translation, Export
+- No business logic — pure infrastructure layer
+- Integrates with Logging (A3) and Filesystem (A5)
+- Independent from HAL implementations
 
-**Required Tests:** `tests/unit/test_plugin_registry.py`, `tests/unit/test_plugin_loader.py`, `tests/integration/test_plugin_lifecycle.py`
+**Required Tests:** `tests/unit/plugins/test_*.py` (15 files, 266 tests), `tests/integration/plugins/test_plugin_integration.py` (12 tests)
+
+**Test Results:** 266 unit tests passed, 12 integration tests passed. 0 mypy errors in plugins module (2 pre-existing errors in logging/logger.py).
 
 ---
 

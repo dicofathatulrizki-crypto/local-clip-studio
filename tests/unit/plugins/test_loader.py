@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from backend.infrastructure.plugins.cache import PluginCache
 from backend.infrastructure.plugins.errors import PluginLoadError
 from backend.infrastructure.plugins.loader import PluginLoader

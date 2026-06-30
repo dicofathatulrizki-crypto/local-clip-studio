@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from packaging.version import InvalidVersion, Version
 
-from backend.infrastructure.plugins.errors import PluginVersionError
 from backend.infrastructure.plugins.types import PluginManifest
 
 

@@ -9,11 +9,9 @@ Handles:
 from __future__ import annotations
 
 import asyncio
-import time
-from typing import Any
 
 from backend.infrastructure.logging.logger import get_logger
-from backend.infrastructure.plugins.errors import PluginRuntimeError, translate_plugin_error
+from backend.infrastructure.plugins.errors import translate_plugin_error
 from backend.infrastructure.plugins.types import PluginInstance, PluginState
 
 logger = get_logger(__name__)
@@ -174,7 +172,7 @@ class PluginLifecycleManager:
 
                 logger.info("Plugin shut down", extra={"plugin_id": instance.manifest.id})
 
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 logger.warning(
                     "Plugin shutdown timed out",
                     extra={"plugin_id": instance.manifest.id, "timeout": self._timeout},

@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 
 import pytest
+
 from backend.infrastructure.plugins.errors import PluginManifestError
 from backend.infrastructure.plugins.manifest import PluginManifestParser
 from backend.infrastructure.plugins.types import PluginType
