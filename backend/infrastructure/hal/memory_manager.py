@@ -12,16 +12,12 @@ Provides:
 from __future__ import annotations
 
 import time
-from typing import Any
 
-from backend.infrastructure.hal.backend_selector import BackendSelector
 from backend.infrastructure.hal.types import (
     BackendType,
     MemoryAllocation,
     MemoryPriority,
     MemorySnapshot,
-    ModelInfo,
-    ModelLoadState,
 )
 
 

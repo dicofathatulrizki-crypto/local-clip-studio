@@ -9,8 +9,6 @@ from __future__ import annotations
 import os
 import platform
 import shutil
-from dataclasses import dataclass
-from typing import Any
 
 from backend.infrastructure.hal.types import (
     BackendType,
@@ -141,7 +139,7 @@ class DeviceDetector:
                             kb = int(line.split()[1])
                             return kb * 1024
             elif platform.system() == "Darwin":
-                import subprocess
+                import subprocess  # noqa: PLC0415
                 result = subprocess.run(
                     ["sysctl", "-n", "hw.memsize"],
                     capture_output=True, text=True, timeout=5,
@@ -149,7 +147,7 @@ class DeviceDetector:
                 if result.returncode == 0:
                     return int(result.stdout.strip())
             elif platform.system() == "Windows":
-                import subprocess
+                import subprocess  # noqa: PLC0415
                 result = subprocess.run(
                     ["wmic", "memorychip", "get", "Capacity"],
                     capture_output=True, text=True, timeout=5,
@@ -200,7 +198,7 @@ class DeviceDetector:
     def _detect_cuda_via_nvidia_smi(self) -> list[DeviceInfo]:
         """Fallback: detect CUDA GPUs via nvidia-smi."""
         devices: list[DeviceInfo] = []
-        import subprocess
+        import subprocess  # noqa: PLC0415
         try:
             result = subprocess.run(
                 ["nvidia-smi", "--query-gpu=index,name,memory.total,driver_version",
@@ -265,7 +263,7 @@ class DeviceDetector:
 
     def _detect_rocm_via_smi(self) -> list[DeviceInfo]:
         """Fallback: detect ROCm GPUs via rocm-smi."""
-        import subprocess
+        import subprocess  # noqa: PLC0415
         devices: list[DeviceInfo] = []
         try:
             result = subprocess.run(
@@ -337,12 +335,12 @@ class DeviceDetector:
     def _get_cuda_version(self) -> str:
         """Get CUDA version string."""
         try:
-            import torch
+            import torch  # noqa: PLC0415
             return torch.version.cuda or ""
         except ImportError:
             pass
 
-        import subprocess
+        import subprocess  # noqa: PLC0415
         try:
             result = subprocess.run(
                 ["nvidia-smi", "--version"],
@@ -356,7 +354,7 @@ class DeviceDetector:
 
     def _get_rocm_version(self) -> str:
         """Get ROCm version string."""
-        import subprocess
+        import subprocess  # noqa: PLC0415
         try:
             result = subprocess.run(
                 ["rocm-smi", "--showversion"],
@@ -401,7 +399,7 @@ class DeviceDetector:
     def _detect_onnx_providers(self) -> list[str]:
         """Detect available ONNX Runtime execution providers."""
         try:
-            import onnxruntime
+            import onnxruntime  # noqa: PLC0415
             return onnxruntime.get_available_providers()
         except ImportError:
             pass

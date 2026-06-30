@@ -218,8 +218,23 @@ class MetalProvider(HALProvider, BaseProvider):
 
     def _get_free_memory(self) -> int:
         """Get available memory (approximation for unified memory)."""
-        import psutil
         try:
+            import psutil  # type: ignore[import-untyped]  # noqa: PLC0415
             return psutil.virtual_memory().available
         except ImportError:
+            # Fallback on Linux
+            try:
+                with open("/proc/meminfo") as f:
+                    for line in f:
+                        if line.startswith("MemAvailable:"):
+                            return int(line.split()[1]) * 1024
+            except Exception:
+                pass
+            try:
+                with open("/proc/meminfo") as f:
+                    for line in f:
+                        if line.startswith("MemFree:"):
+                            return int(line.split()[1]) * 1024
+            except Exception:
+                pass
             return 0

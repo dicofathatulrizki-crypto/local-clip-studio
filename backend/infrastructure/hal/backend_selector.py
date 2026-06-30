@@ -8,8 +8,6 @@ available VRAM, user preferences, and fallback policies.
 """
 from __future__ import annotations
 
-from typing import Any
-
 from backend.infrastructure.hal.types import (
     BackendType,
     DeviceInfo,
@@ -35,7 +33,7 @@ class BackendSelection:
 
     @property
     def is_valid(self) -> bool:
-        return self.device_info.status == DeviceStatus.AVAILABLE
+        return self.device_info.status == DeviceStatus.AVAILABLE and self.score > 0.0
 
     def __repr__(self) -> str:
         return (
@@ -61,12 +59,12 @@ class BackendSelector:
     """
 
     # Default priority order: CUDA → ROCm → Metal → CPU
-    DEFAULT_PRIORITY: list[BackendType] = [
+    DEFAULT_PRIORITY: tuple[BackendType, ...] = (
         BackendType.CUDA,
         BackendType.ROCM,
         BackendType.METAL,
         BackendType.CPU,
-    ]
+    )
 
     def __init__(
         self,
@@ -179,6 +177,10 @@ class BackendSelector:
         if info is None or info.status != DeviceStatus.AVAILABLE:
             return None
 
+        # Skip CPU if fallback is disabled (unless user specifically requested it)
+        if backend_type == BackendType.CPU and not self._enable_cpu_fallback and not is_user_preferred:
+            return None
+
         reason_parts = []
         if is_user_preferred:
             reason_parts.append("user preference")
@@ -188,8 +190,7 @@ class BackendSelector:
         if model_info is not None:
             if model_info.requires_gpu and backend_type == BackendType.CPU:
                 reason_parts.append("GPU required by model")
-                if not self._enable_cpu_fallback:
-                    return None
+                return None
             if model_info.requires_fp16 and backend_type == BackendType.CPU:
                 reason_parts.append("FP16 not available on CPU")
 
@@ -249,6 +250,13 @@ class BackendSelector:
                     score=50.0,
                     reason="Fallback: CPU (best available)",
                 )
+            # CPU fallback disabled — mark as unavailable
+            return BackendSelection(
+                backend_type=BackendType.CPU,
+                device_info=cpu_info,
+                score=0.0,
+                reason="CPU fallback disabled",
+            )
 
         # No backends available at all
         fallback_info = DeviceInfo(

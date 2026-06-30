@@ -5,8 +5,6 @@ the active backend. Supports FP32, FP16, BF16, and INT8 precision.
 """
 from __future__ import annotations
 
-from typing import Any
-
 from backend.infrastructure.hal.types import BackendType, PrecisionType
 
 
@@ -39,7 +37,7 @@ class TensorAllocator:
         device = _backend_to_torch_device(backend)
 
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             return torch.zeros(shape, dtype=dtype, device=device)
 
         # Fallback: return shape info for CPU-only environments
@@ -56,7 +54,7 @@ class TensorAllocator:
         device = _backend_to_torch_device(backend)
 
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             return torch.ones(shape, dtype=dtype, device=device)
 
         return {"type": "tensor", "shape": shape, "dtype": precision.value, "device": device}
@@ -73,7 +71,7 @@ class TensorAllocator:
         device = _backend_to_torch_device(backend)
 
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             return torch.full(shape, fill_value, dtype=dtype, device=device)
 
         return {
@@ -95,7 +93,7 @@ class TensorAllocator:
         device = _backend_to_torch_device(backend)
 
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             return torch.randn(shape, dtype=dtype, device=device)
 
         return {"type": "tensor", "shape": shape, "dtype": precision.value, "device": device}
@@ -117,7 +115,7 @@ class TensorAllocator:
             A backend-specific tensor.
         """
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             tensor = torch.from_numpy(array)  # type: ignore[arg-type]
             if precision is not None:
                 tensor = tensor.to(_precision_to_torch_dtype(precision))
@@ -142,7 +140,7 @@ class TensorAllocator:
             Tensor on the target device.
         """
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             if isinstance(tensor, torch.Tensor):
                 device = _backend_to_torch_device(target_backend)
                 return tensor.to(device)
@@ -164,7 +162,7 @@ class TensorAllocator:
             Precision-converted tensor.
         """
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             if isinstance(tensor, torch.Tensor):
                 dtype = _precision_to_torch_dtype(precision)
                 return tensor.to(dtype)
@@ -182,7 +180,7 @@ class TensorAllocator:
             Numpy ndarray.
         """
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             if isinstance(tensor, torch.Tensor):
                 return tensor.cpu().numpy()
 
@@ -199,7 +197,7 @@ class TensorAllocator:
             Tuple of dimension sizes.
         """
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             if isinstance(tensor, torch.Tensor):
                 return tuple(tensor.shape)
 
@@ -219,7 +217,7 @@ class TensorAllocator:
             Device string (e.g., 'cpu', 'cuda:0', 'mps:0').
         """
         if _torch_available():
-            import torch
+            import torch  # noqa: PLC0415
             if isinstance(tensor, torch.Tensor):
                 return str(tensor.device)
 
@@ -232,7 +230,7 @@ class TensorAllocator:
 def _torch_available() -> bool:
     """Check if PyTorch is available."""
     try:
-        import torch  # noqa: F401
+        import torch  # noqa: F401, PLC0415
         return True
     except ImportError:
         return False

@@ -6,7 +6,6 @@ No module may directly access CUDA, ROCm, Metal, or CPU-specific APIs.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pathlib import Path
 
 from backend.infrastructure.hal.types import (
     BackendType,
@@ -17,7 +16,6 @@ from backend.infrastructure.hal.types import (
     MemoryPriority,
     MemorySnapshot,
     ModelInfo,
-    ModelLoadState,
     PerformanceMetrics,
 )
 

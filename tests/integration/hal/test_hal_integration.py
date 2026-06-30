@@ -8,11 +8,7 @@ from __future__ import annotations
 import pytest
 
 from backend.infrastructure.hal import create_hal
-from backend.infrastructure.hal.types import (
-    BackendType,
-    ModelInfo,
-    ModelLoadState,
-)
+from backend.infrastructure.hal.types import BackendType
 
 
 class TestHALEndToEnd:
@@ -54,16 +50,9 @@ class TestHALEndToEnd:
         provider.free_memory(alloc)
         provider.shutdown()
 
-    def test_backend_selection_with_model(self) -> None:
-        """Backend selection should consider model requirements."""
+    def test_inference_without_model_raises(self) -> None:
+        """Running inference without loading a model should raise."""
         hal = create_hal()
-
-        # Model that requires GPU
-        gpu_model = ModelInfo(
-            model_id="gpu_model",
-            requires_gpu=True,
-            size_bytes=100 * 1024 * 1024,  # 100 MB
-        )
 
         with pytest.raises(RuntimeError, match="No model is loaded"):
             session = hal.create_inference_session()

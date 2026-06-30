@@ -63,7 +63,7 @@ class DeviceInfo:
     driver_version: str = ""
 
 
-@dataclass(frozen=True)
+@dataclass
 class CapabilityInfo:
     """Supported precision and compute capabilities."""
     supports_fp16: bool = False
@@ -142,6 +142,7 @@ class MemoryAllocation:
     backend_type: BackendType = BackendType.CPU
     allocated_at: float = 0.0
     last_accessed: float = 0.0
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass

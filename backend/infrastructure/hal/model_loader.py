@@ -11,8 +11,6 @@ Supports:
 """
 from __future__ import annotations
 
-import hashlib
-import json
 import re
 import time
 from pathlib import Path
@@ -23,7 +21,6 @@ from backend.infrastructure.hal.backend_selector import BackendSelection
 from backend.infrastructure.hal.memory_manager import MemoryManager
 from backend.infrastructure.hal.types import (
     BackendType,
-    MemoryPriority,
     ModelInfo,
     ModelLoadState,
 )

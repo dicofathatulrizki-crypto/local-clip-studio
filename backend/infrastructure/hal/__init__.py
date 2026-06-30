@@ -45,15 +45,14 @@ from backend.infrastructure.hal.types import (
 )
 
 __all__ = [
+    "HAL",
     "BackendSelector",
     "BackendType",
     "CapabilityDetector",
     "CapabilityInfo",
-    "CapabilityInfo",
     "DeviceDetector",
     "DeviceInfo",
     "DeviceStatus",
-    "HAL",
     "HardwareInfo",
     "InferenceSession",
     "MemoryAllocation",

@@ -5,10 +5,7 @@ Used when no GPU backend is available or when fallback is requested.
 """
 from __future__ import annotations
 
-import os
 import time
-from pathlib import Path
-from typing import Any
 
 from backend.infrastructure.hal.base import HALProvider
 from backend.infrastructure.hal.capability_detector import CapabilityDetector
@@ -23,7 +20,6 @@ from backend.infrastructure.hal.types import (
     MemoryPriority,
     MemorySnapshot,
     ModelInfo,
-    ModelLoadState,
     PerformanceMetrics,
 )
 
@@ -66,28 +62,21 @@ class CPUProvider(HALProvider, BaseProvider):
             self._device_info = self._detector.detect_single(BackendType.CPU)
         dev = self._device_info or DeviceInfo(backend_type=BackendType.CPU)
         # Update free memory
-        import psutil
+        free_ram = self._get_free_ram_no_psutil()
         try:
-            dev = DeviceInfo(
-                device_id=dev.device_id,
-                name=dev.name,
-                vendor=dev.vendor,
-                backend_type=dev.backend_type,
-                status=self._status,
-                total_vram_bytes=dev.total_vram_bytes,
-                free_vram_bytes=psutil.virtual_memory().available,
-            )
+            import psutil  # type: ignore[import-untyped]
+            free_ram = psutil.virtual_memory().available
         except ImportError:
-            dev = DeviceInfo(
-                device_id=dev.device_id,
-                name=dev.name,
-                vendor=dev.vendor,
-                backend_type=dev.backend_type,
-                status=self._status,
-                total_vram_bytes=dev.total_vram_bytes,
-                free_vram_bytes=dev.total_vram_bytes,
-            )
-        return dev
+            pass
+        return DeviceInfo(
+            device_id=dev.device_id,
+            name=dev.name,
+            vendor=dev.vendor,
+            backend_type=dev.backend_type,
+            status=self._status,
+            total_vram_bytes=dev.total_vram_bytes,
+            free_vram_bytes=free_ram,
+        )
 
     def get_capabilities(self) -> CapabilityInfo:
         return self._capability_detector.detect(BackendType.CPU)
@@ -156,15 +145,32 @@ class CPUProvider(HALProvider, BaseProvider):
     # ─── Private ────────────────────────────────────────────────
 
     def _get_total_ram(self) -> int:
-        import psutil
+        free = self._get_free_ram_no_psutil()
         try:
+            import psutil  # type: ignore[import-untyped]
             return psutil.virtual_memory().total
         except ImportError:
-            return 0
+            return free
 
     def _get_available_ram(self) -> int:
-        import psutil
+        free = self._get_free_ram_no_psutil()
         try:
+            import psutil  # type: ignore[import-untyped]
             return psutil.virtual_memory().available
         except ImportError:
-            return 0
+            return free
+
+    def _get_free_ram_no_psutil(self) -> int:
+        """Get estimated free RAM without psutil."""
+        try:
+            import platform
+            if platform.system() == "Linux":
+                with open("/proc/meminfo") as f:
+                    for line in f:
+                        if line.startswith("MemAvailable:"):
+                            return int(line.split()[1]) * 1024
+                        if line.startswith("MemFree:"):
+                            return int(line.split()[1]) * 1024
+        except Exception:
+            pass
+        return 0

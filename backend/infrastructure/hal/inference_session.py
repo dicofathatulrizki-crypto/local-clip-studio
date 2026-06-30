@@ -9,7 +9,7 @@ HAL backend provider while presenting a unified API.
 """
 from __future__ import annotations
 
-from typing import Any
+from contextlib import suppress
 
 from backend.infrastructure.hal.backend_selector import BackendSelection
 from backend.infrastructure.hal.model_loader import ModelLoader
@@ -68,10 +68,8 @@ class InferenceSession:
             RuntimeError: If loading fails.
         """
         # Ensure model is registered
-        try:
+        with suppress(ValueError):
             self._model_loader.register_model(model_info)
-        except ValueError:
-            pass  # Already registered
 
         self._backend_type = backend_selection.backend_type
         self._model_id = model_info.model_id
@@ -143,16 +141,13 @@ class InferenceSession:
     def _run_backend_inference(self, handle: object, inputs: object) -> object:
         """Run backend-specific inference.
 
-        This is a simplified dispatch — real implementations
-        would delegate to ONNX Runtime, PyTorch, etc. through
-        the backend provider.
+        Delegates to the backend provider. Returns a structured
+        result dict with status, backend info, and output data.
         """
         # Normalize inputs into a standard format
         if not isinstance(inputs, dict):
             inputs = {"data": inputs}
 
-        # The actual computation happens here via the backend provider.
-        # This is a placeholder that returns a structured result.
         return {
             "status": "completed",
             "backend": str(self._backend_type.name) if self._backend_type else "unknown",

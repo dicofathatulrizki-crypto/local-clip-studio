@@ -46,7 +46,7 @@ class CapabilityDetector:
         """Detect CUDA capabilities via PyTorch."""
         caps = CapabilityInfo()
         try:
-            import torch
+            import torch  # noqa: PLC0415
             if torch.cuda.is_available():
                 caps.supports_fp16 = True
                 caps.supports_int8 = True
@@ -60,7 +60,7 @@ class CapabilityDetector:
 
                 # Compute capability
                 props = torch.cuda.get_device_properties(0)
-                major, minor = props.major, props.minor
+                major = props.major
 
                 # Grid/block dimensions from compute capability
                 if major >= 8:
@@ -82,7 +82,7 @@ class CapabilityDetector:
     def _detect_cuda_fallback(self) -> CapabilityInfo:
         """Detect CUDA capabilities without PyTorch."""
         caps = CapabilityInfo()
-        import subprocess
+        import subprocess  # noqa: PLC0415
         try:
             result = subprocess.run(
                 ["nvidia-smi"],
@@ -101,7 +101,7 @@ class CapabilityDetector:
         """Detect ROCm capabilities."""
         caps = CapabilityInfo()
         try:
-            import torch
+            import torch  # noqa: PLC0415
             if torch.cuda.is_available() and hasattr(torch.version, "hip"):
                 caps.supports_fp16 = True
                 caps.supports_bf16 = True
@@ -116,7 +116,7 @@ class CapabilityDetector:
         """Detect Metal (Apple MPS) capabilities."""
         caps = CapabilityInfo()
         try:
-            import torch
+            import torch  # noqa: PLC0415
             if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
                 caps.supports_fp16 = True
         except ImportError:
@@ -124,8 +124,7 @@ class CapabilityDetector:
         except Exception:
             pass
 
-        # Apple Silicon (arm64) on macOS supports FP16 natively
-        import platform
+        import platform  # noqa: PLC0415
         if platform.system() == "Darwin" and platform.machine() == "arm64":
             caps.supports_fp16 = True
 

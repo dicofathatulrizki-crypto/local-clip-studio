@@ -3,26 +3,23 @@ from __future__ import annotations
 
 import time
 from abc import ABC
-from typing import Any
 
 from backend.infrastructure.hal.types import (
-    BackendType,
-    CapabilityInfo,
-    DeviceInfo,
     DeviceStatus,
     MemoryAllocation,
     MemoryPriority,
     MemorySnapshot,
-    ModelInfo,
     PerformanceMetrics,
 )
 
 
-class BaseProvider(ABC):
+class BaseProvider:
     """Shared base for provider implementations.
 
     Provides default implementations for common functionality
-    that all backends share.
+    that all backends share. Not an abstract base class —
+    individual backends inherit from both HALProvider (the
+    abstract interface) and BaseProvider (shared implementation).
     """
 
     def __init__(self) -> None:
@@ -39,7 +36,7 @@ class BaseProvider(ABC):
         self._allocations.clear()
         self._allocation_counter = 0
 
-    def _get_allocation_key(self, size_bytes: int) -> str:
+    def _get_allocation_key(self) -> str:
         """Generate a unique allocation key."""
         self._allocation_counter += 1
         timestamp = int(time.time() * 1_000_000)
@@ -49,7 +46,7 @@ class BaseProvider(ABC):
         self, size_bytes: int, priority: MemoryPriority = MemoryPriority.NORMAL
     ) -> MemoryAllocation:
         """Common memory allocation tracking."""
-        key = self._get_allocation_key(size_bytes)
+        key = self._get_allocation_key()
         now = time.time()
         alloc = MemoryAllocation(
             key=key,

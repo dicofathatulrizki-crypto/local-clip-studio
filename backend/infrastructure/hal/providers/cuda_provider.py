@@ -6,7 +6,6 @@ Falls back gracefully if CUDA or PyTorch is unavailable.
 from __future__ import annotations
 
 import time
-from typing import Any
 
 from backend.infrastructure.hal.base import HALProvider
 from backend.infrastructure.hal.capability_detector import CapabilityDetector
@@ -21,7 +20,6 @@ from backend.infrastructure.hal.types import (
     MemoryPriority,
     MemorySnapshot,
     ModelInfo,
-    ModelLoadState,
     PerformanceMetrics,
 )
 
