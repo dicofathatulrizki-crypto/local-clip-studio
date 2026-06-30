@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.entities.analysis import Analysis as DomainAnalysis

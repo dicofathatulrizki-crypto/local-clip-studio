@@ -19,8 +19,6 @@ from backend.domain.entities.analysis import Analysis as DomainAnalysis
 from backend.domain.entities.caption import Caption as DomainCaption
 from backend.domain.entities.clip import Clip as DomainClip
 from backend.domain.entities.export import Export as DomainExport
-from backend.domain.entities.plugin import Plugin as DomainPlugin
-from backend.domain.entities.plugin import PluginInfo as DomainPluginInfo
 from backend.domain.entities.project import Project as DomainProject
 from backend.domain.entities.provider import Provider as DomainProvider
 from backend.domain.entities.video import Video as DomainVideo
@@ -28,7 +26,6 @@ from backend.domain.state_machines import (
     AnalysisState,
     ClipState,
     ExportState,
-    PluginState,
     ProjectState,
     UploadState,
 )
@@ -37,7 +34,6 @@ from backend.domain.value_objects import (
     CaptionId,
     ClipId,
     FileHash,
-    PluginId,
     ProjectId,
     ProviderId,
     VideoId,
@@ -48,11 +44,8 @@ from backend.infrastructure.database.models.clip_candidate import ClipCandidate 
 from backend.infrastructure.database.models.export_job import ExportJob as ORMExport
 from backend.infrastructure.database.models.model_registry import ModelRegistry as ORMModelRegistry
 from backend.infrastructure.database.models.project import Project as ORMProject
-from backend.infrastructure.database.models.project_video import ProjectVideo as ORMProjectVideo
 from backend.infrastructure.database.models.provider_config import ProviderConfig as ORMProvider
 from backend.infrastructure.database.models.video_master import VideoMaster as ORMVideoMaster
-from backend.infrastructure.database.repositories.exceptions import MappingError
-
 
 # ---------------------------------------------------------------------------
 # Project mapper
@@ -140,6 +133,10 @@ class VideoMapper:
     @staticmethod
     def to_orm(domain: DomainVideo) -> ORMVideoMaster:
         """Convert Domain Video to ORM VideoMaster for creation."""
+        # Compute imported_at safely (domain may not have created_at)
+        imported_at = domain.imported_at
+        if imported_at is None:
+            imported_at = getattr(domain, "created_at", None)
         return ORMVideoMaster(
             id=str(domain.id),
             hash=str(domain.hash),
@@ -153,7 +150,7 @@ class VideoMapper:
             audio_codec=domain.audio_codec,
             bitrate=domain.bitrate,
             storage_path=domain.storage_path,
-            imported_at=domain.imported_at or domain.created_at if hasattr(domain, 'created_at') else None,
+            imported_at=imported_at,
         )
 
     @staticmethod
@@ -201,7 +198,7 @@ class AnalysisMapper:
             hooks=orm.hooks,
             chapters=orm.chapters,
             quality_score=orm.quality_score,
-            quality_dimensions=orm.quality_details,
+            quality_dimensions=orm.quality_details or None,
             duration_ms=orm.duration_ms,
             started_at=orm.started_at,
             completed_at=orm.completed_at,
@@ -398,19 +395,22 @@ class ExportMapper:
     @staticmethod
     def to_orm(domain: DomainExport) -> ORMExport:
         """Convert Domain Export to ORM ExportJob for creation."""
-        return ORMExport(
-            id=domain.id,
-            clip_id=domain.clip_id,
-            format=domain.format,
-            preset=domain.preset,
-            status=domain.status.value,
-            progress=domain.progress,
-            output_path=domain.output_path,
-            error_message=domain.error_message,
-            started_at=domain.started_at,
-            completed_at=domain.completed_at,
-            created_at=domain.created_at,
-        )
+        # Only pass id if explicitly set (UUIDMixin auto-generates otherwise)
+        kwargs: dict[str, Any] = {
+            "clip_id": domain.clip_id,
+            "format": domain.format,
+            "preset": domain.preset,
+            "status": domain.status.value,
+            "progress": domain.progress,
+            "output_path": domain.output_path,
+            "error_message": domain.error_message,
+            "started_at": domain.started_at,
+            "completed_at": domain.completed_at,
+            "created_at": domain.created_at,
+        }
+        if domain.id:
+            kwargs["id"] = domain.id
+        return ORMExport(**kwargs)
 
     @staticmethod
     def update_orm(domain: DomainExport, orm: ORMExport) -> None:

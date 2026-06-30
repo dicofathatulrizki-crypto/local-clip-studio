@@ -28,7 +28,8 @@ class ModelRegistryRepository(BaseRepository[ORMModel]):
         Returns:
             Model data dict or None
         """
-        orm = await self.get(model_id)
+        # ModelRegistry uses model_id as PK, not 'id' — use find_by
+        orm = await self.find_by(model_id=model_id)
         if orm is None:
             return None
         return ModelRegistryMapper.to_dict(orm)

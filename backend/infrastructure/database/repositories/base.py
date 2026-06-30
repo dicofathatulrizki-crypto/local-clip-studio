@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from typing import Any, Generic, TypeVar
 
 from sqlalchemy import Result, Select, func, select, text, update
-from sqlalchemy.exc import IntegrityError, MultipleResultsFound, NoResultFound
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.infrastructure.database.base import Base, SoftDeleteMixin
@@ -21,8 +21,8 @@ from backend.infrastructure.database.repositories.exceptions import (
     ConcurrentUpdateError,
     DuplicateEntityError,
     EntityNotFoundError,
-    RepositoryIntegrityError,
     RepositoryError,
+    RepositoryIntegrityError,
 )
 
 ModelT = TypeVar("ModelT", bound=Base)
@@ -200,7 +200,7 @@ class BaseRepository(Generic[ModelT]):
             self.model_class.id == id_  # type: ignore[attr-defined]
         )
         stmt = self._apply_soft_delete_filter(stmt)
-        result: Result = await self.session.execute(stmt)
+        result: Result[tuple[ModelT]] = await self.session.execute(stmt)  # type: ignore[valid-type]
         return result.unique().scalar_one_or_none()
 
     async def get_or_raise(self, id_: str) -> ModelT:
@@ -233,7 +233,7 @@ class BaseRepository(Generic[ModelT]):
         stmt = self._apply_soft_delete_filter(stmt)
         for col, val in kwargs.items():
             stmt = stmt.where(getattr(self.model_class, col) == val)
-        result: Result = await self.session.execute(stmt)
+        result: Result[tuple[ModelT]] = await self.session.execute(stmt)  # type: ignore[valid-type]
         return result.unique().scalar_one_or_none()
 
     async def find_many_by(self, **kwargs: Any) -> Sequence[ModelT]:
@@ -249,7 +249,7 @@ class BaseRepository(Generic[ModelT]):
         stmt = self._apply_soft_delete_filter(stmt)
         for col, val in kwargs.items():
             stmt = stmt.where(getattr(self.model_class, col) == val)
-        result: Result = await self.session.execute(stmt)
+        result: Result[tuple[ModelT]] = await self.session.execute(stmt)  # type: ignore[valid-type]
         return list(result.unique().scalars().all())
 
     async def exists(self, id_: str) -> bool:
@@ -265,7 +265,7 @@ class BaseRepository(Generic[ModelT]):
             self.model_class.id == id_  # type: ignore[attr-defined]
         )
         stmt = self._apply_soft_delete_filter(stmt)
-        result: Result = await self.session.execute(stmt)
+        result: Result[tuple[ModelT]] = await self.session.execute(stmt)  # type: ignore[valid-type]
         return result.unique().scalar_one_or_none() is not None
 
     async def count(
@@ -284,7 +284,7 @@ class BaseRepository(Generic[ModelT]):
         if filters:
             for col, val in filters.items():
                 stmt = stmt.where(getattr(self.model_class, col) == val)
-        result: Result = await self.session.execute(stmt)
+        result: Result[tuple[int]] = await self.session.execute(stmt)  # type: ignore[valid-type]
         return result.scalar_one()
 
     async def list(
@@ -323,12 +323,12 @@ class BaseRepository(Generic[ModelT]):
                 stmt = stmt.order_by(col.desc() if descending else col.asc())
 
             stmt = stmt.offset(offset).limit(limit)
-            result: Result = await self.session.execute(stmt)
+            result: Result[tuple[ModelT]] = await self.session.execute(stmt)  # type: ignore[valid-type]
             records: list[ModelT] = list(result.unique().scalars().all())
 
             return records, total
         except Exception as exc:
-            await self._handle_general_error(exc, "list")
+            await self._handle_general_error(exc)
             raise
 
     # ------------------------------------------------------------------
@@ -401,7 +401,7 @@ class BaseRepository(Generic[ModelT]):
 
         # Increment version
         if hasattr(instance, "version"):
-            setattr(instance, "version", actual_version + 1)
+            instance.version = actual_version + 1
 
         await self.session.flush()
         await self.session.refresh(instance)
@@ -427,9 +427,9 @@ class BaseRepository(Generic[ModelT]):
                 .where(self.model_class.id.in_(ids))  # type: ignore[attr-defined]
                 .values(**kwargs)
             )
-            result = await self.session.execute(stmt)
+            stmt_result = await self.session.execute(stmt)
             await self.session.flush()
-            return result.rowcount  # type: ignore[return-value]
+            return stmt_result.rowcount  # type: ignore[return-value]
         except IntegrityError as exc:
             await self.session.rollback()
             await self._handle_integrity_error(exc)
@@ -462,7 +462,7 @@ class BaseRepository(Generic[ModelT]):
         except IntegrityError as exc:
             await self.session.rollback()
             raise RepositoryIntegrityError(
-                f"Cannot delete {self._table_name} '{id_}' — referenced by other records",
+                "Cannot delete " + self._table_name + f" '{id_}' - referenced by other records",
             ) from exc
 
     async def bulk_delete(self, ids: list[str]) -> int:
@@ -480,8 +480,8 @@ class BaseRepository(Generic[ModelT]):
             stmt = select(self.model_class).where(
                 self.model_class.id.in_(ids)  # type: ignore[attr-defined]
             )
-            result: Result = await self.session.execute(stmt)
-            instances = list(result.unique().scalars().all())
+            del_result: Result[tuple[ModelT]] = await self.session.execute(stmt)  # type: ignore[valid-type]
+            instances = list(del_result.unique().scalars().all())
             for inst in instances:
                 await self.session.delete(inst)
             await self.session.flush()
@@ -489,7 +489,7 @@ class BaseRepository(Generic[ModelT]):
         except IntegrityError as exc:
             await self.session.rollback()
             raise RepositoryIntegrityError(
-                f"Cannot delete {len(ids)} records from {self._table_name}",
+                "Cannot delete " + str(len(ids)) + " records from " + self._table_name,
             ) from exc
 
     async def soft_delete(self, id_: str) -> bool:
@@ -532,7 +532,7 @@ class BaseRepository(Generic[ModelT]):
         stmt = select(self.model_class).where(
             self.model_class.id == id_  # type: ignore[attr-defined]
         )
-        result: Result = await self.session.execute(stmt)
+        result: Result[tuple[ModelT]] = await self.session.execute(stmt)  # type: ignore[valid-type]
         instance = result.unique().scalar_one_or_none()
 
         if instance is None:
@@ -563,7 +563,7 @@ class BaseRepository(Generic[ModelT]):
         Returns:
             SQLAlchemy Result object
         """
-        result: Result = await self.session.execute(
+        result: Result[Any] = await self.session.execute(
             text(sql).bindparams(**(params or {}))
         )
         return result

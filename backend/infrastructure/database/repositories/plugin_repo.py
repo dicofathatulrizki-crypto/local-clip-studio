@@ -11,11 +11,9 @@ from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.infrastructure.database.repositories.base import BaseRepository
-from backend.infrastructure.database.repositories.exceptions import EntityNotFoundError
-
 # Reuse SettingsEntry model for plugin config storage
 from backend.infrastructure.database.models.settings import SettingsEntry as ORMSettings
+from backend.infrastructure.database.repositories.base import BaseRepository
 
 
 class PluginConfigRepository(BaseRepository[ORMSettings]):

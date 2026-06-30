@@ -58,8 +58,9 @@ from backend.infrastructure.database.repositories.video_repo import (
     VideoMasterRepository,
 )
 
-# Use a simple mock base model for testing generic BaseRepository functionality
+# Async tests only — sync tests avoid the global asyncio mark
 pytestmark = pytest.mark.asyncio
+# Individual sync tests use pytest.mark.noasyncio to skip asyncio
 
 
 # ---------------------------------------------------------------------------
@@ -109,6 +110,7 @@ class TestMappers:
     def test_project_mapper_preserves_fields(self) -> None:
         """Test Project mapper round-trips correctly."""
         from backend.infrastructure.database.repositories.mappers import ProjectMapper
+        import pytest  # noqa: F811 — local import for sync tests
 
         domain = DomainProject(name="Test Project", description="A test")
         domain.activate()
@@ -127,6 +129,7 @@ class TestMappers:
     def test_video_mapper_preserves_fields(self) -> None:
         """Test Video mapper round-trips correctly."""
         from backend.infrastructure.database.repositories.mappers import VideoMapper
+        import pytest  # noqa: F811 — local import for sync tests
 
         domain = DomainVideo(
             original_filename="test.mp4",
@@ -151,6 +154,7 @@ class TestMappers:
     def test_analysis_mapper_preserves_fields(self) -> None:
         """Test Analysis mapper round-trips correctly."""
         from backend.infrastructure.database.repositories.mappers import AnalysisMapper
+        import pytest  # noqa: F811 — local import for sync tests
 
         domain = DomainAnalysis(
             video_id=VideoId(value="vid-1"),
@@ -170,6 +174,7 @@ class TestMappers:
     def test_clip_mapper_preserves_fields(self) -> None:
         """Test Clip mapper round-trips correctly."""
         from backend.infrastructure.database.repositories.mappers import ClipMapper
+        import pytest  # noqa: F811 — local import for sync tests
 
         domain = DomainClip(
             video_id=VideoId(value="vid-1"),
@@ -196,6 +201,7 @@ class TestMappers:
     def test_caption_mapper_preserves_fields(self) -> None:
         """Test Caption mapper round-trips correctly."""
         from backend.infrastructure.database.repositories.mappers import CaptionMapper
+        import pytest  # noqa: F811 — local import for sync tests
 
         domain = DomainCaption(
             clip_id=ClipId(value="clip-1"),
@@ -215,6 +221,7 @@ class TestMappers:
     def test_export_mapper_preserves_fields(self) -> None:
         """Test Export mapper round-trips correctly."""
         from backend.infrastructure.database.repositories.mappers import ExportMapper
+        import pytest  # noqa: F811 — local import for sync tests
 
         domain = DomainExport(
             id="exp-1",
@@ -236,6 +243,7 @@ class TestMappers:
     def test_provider_mapper_preserves_fields(self) -> None:
         """Test Provider mapper round-trips correctly."""
         from backend.infrastructure.database.repositories.mappers import ProviderMapper
+        import pytest  # noqa: F811 — local import for sync tests
 
         domain = DomainProvider(
             id=ProviderId("openai"),

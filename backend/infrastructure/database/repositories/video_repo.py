@@ -4,17 +4,14 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.domain.entities.video import Video as DomainVideo
-from backend.domain.value_objects import FileHash, VideoId
 from backend.infrastructure.database.models.project_video import ProjectVideo as ORMProjectVideo
 from backend.infrastructure.database.models.video_master import VideoMaster as ORMVideoMaster
 from backend.infrastructure.database.repositories.base import BaseRepository
 from backend.infrastructure.database.repositories.exceptions import (
     EntityNotFoundError,
-    RepositoryError,
 )
 from backend.infrastructure.database.repositories.mappers import VideoMapper
 

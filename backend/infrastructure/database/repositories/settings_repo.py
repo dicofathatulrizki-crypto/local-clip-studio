@@ -8,10 +8,8 @@ from typing import Any
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.infrastructure.database.base import BaseRepository as BaseRepo
 from backend.infrastructure.database.models.settings import SettingsEntry as ORMSettings
 from backend.infrastructure.database.repositories.base import BaseRepository
-from backend.infrastructure.database.repositories.exceptions import EntityNotFoundError
 
 
 class SettingsRepository(BaseRepository[ORMSettings]):
