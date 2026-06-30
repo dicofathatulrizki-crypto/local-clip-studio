@@ -15,7 +15,6 @@ import shutil
 import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
 
 
 @dataclass
@@ -274,14 +273,16 @@ class FFmpegLocator:
 
     def _run_ffmpeg(self, args: list[str]) -> str:
         """Run FFmpeg with given args and return stdout."""
-        ffmpeg = shutil.which("ffmpeg") or self._ffmpeg_path or "ffmpeg"
+        # Use the configured path first, then fall back to system PATH
+        ffmpeg = self._ffmpeg_path or shutil.which("ffmpeg") or "ffmpeg"
         result = subprocess.run(
             [ffmpeg] + args,
             capture_output=True, text=True, timeout=15,
         )
         return result.stdout + "\n" + result.stderr
 
-    def _parse_version_line(self, output: str) -> str:
+    @staticmethod
+    def _parse_version_line(output: str) -> str:
         """Extract version string from FFmpeg version output."""
         for line in output.split("\n"):
             if "ffmpeg version" in line.lower():

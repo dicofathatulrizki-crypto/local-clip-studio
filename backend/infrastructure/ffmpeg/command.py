@@ -5,12 +5,8 @@ shell injection. No argument value is concatenated into a shell command.
 """
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
-
 from backend.infrastructure.ffmpeg.types import (
     AudioParams,
-    CaptionParams,
     CropParams,
     ExportParams,
     FrameExtractParams,
@@ -130,7 +126,7 @@ class CommandBuilder:
             "-preset", p.preset,
             "-an",
         ]
-        cmd.extend(self._faststart())
+        cmd.extend(["-movflags", "+faststart"])
         cmd.extend(["-y", output_path])
         return cmd
 
@@ -332,16 +328,78 @@ class CommandBuilder:
         if params.gpu_params:
             cmd.extend(params.gpu_params)
 
-        cmd.extend(self._faststart())
+        cmd.extend(["-movflags", "+faststart"])
         cmd.extend(["-y", output_path])
         return cmd
 
-    # ─── Helpers ───────────────────────────────────────────────
+    # ─── Subtitle Burn-in ─────────────────────────────────────
 
     @staticmethod
-    def _faststart() -> list[str]:
-        """Return Faststart flags for web-optimized MP4."""
-        return ["-movflags", "+faststart"]
+    def burn_subtitles(
+        input_path: str,
+        subtitle_path: str,
+        output_path: str,
+        burn_style: str | None = None,
+    ) -> list[str]:
+        """Build command to burn subtitles into the video stream.
+
+        Args:
+            input_path: Source video path.
+            subtitle_path: Path to subtitle file (.srt, .ass, .vtt).
+            output_path: Output video path.
+            burn_style: Optional ASS style overrides.
+
+        Returns:
+            List of command arguments.
+        """
+        vf = f"subtitles={subtitle_path}"
+        if burn_style:
+            vf += f":force_style='{burn_style}'"
+        return [
+            "-i", input_path,
+            "-vf", vf,
+            "-c:a", "copy",
+            "-y",
+            output_path,
+        ]
+
+    # ─── Caption Rendering ─────────────────────────────────────
+
+    @staticmethod
+    def render_captions(
+        input_path: str,
+        captions_path: str,
+        output_path: str,
+        use_ass: bool = True,
+    ) -> list[str]:
+        """Build command to render captions as soft or hard subtitles.
+
+        Args:
+            input_path: Source video path.
+            captions_path: Path to caption file (.srt, .ass).
+            output_path: Output video path.
+            use_ass: If True, use ASS format for styled captions.
+
+        Returns:
+            List of command arguments.
+        """
+        if use_ass:
+            return [
+                "-i", input_path,
+                "-vf", f"ass={captions_path}",
+                "-c:a", "copy",
+                "-y",
+                output_path,
+            ]
+        return [
+            "-i", input_path,
+            "-vf", f"subtitles={captions_path}",
+            "-c:a", "copy",
+            "-y",
+            output_path,
+        ]
+
+    # ─── Helpers ───────────────────────────────────────────────
 
     @staticmethod
     def build_filter_graph(filters: VideoFilters) -> str:

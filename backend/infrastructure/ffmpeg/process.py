@@ -14,11 +14,8 @@ from __future__ import annotations
 import asyncio
 import os
 import signal
-import subprocess
-import tempfile
 import time
 from pathlib import Path
-from typing import Any
 
 from backend.infrastructure.ffmpeg.errors import FFmpegError, FFmpegTimeoutError, translate_error
 from backend.infrastructure.ffmpeg.progress import ProgressCallback, ProgressParser
@@ -128,7 +125,7 @@ class ProcessRunner:
                         self._process.wait(),
                         timeout=timeout,
                     )
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     await self._terminate_process()
                     stderr_output = await stderr_task
                     raise FFmpegTimeoutError(timeout_seconds=timeout, command=cmd_str)
@@ -194,7 +191,7 @@ class ProcessRunner:
                 os.kill(pid, signal.SIGTERM)
                 try:
                     await asyncio.wait_for(self._process.wait(), timeout=5)
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning("FFmpeg did not respond to SIGTERM, sending SIGKILL")
                     os.kill(pid, signal.SIGKILL)
                     await self._process.wait()

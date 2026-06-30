@@ -23,25 +23,19 @@ from typing import Any
 
 from backend.infrastructure.ffmpeg.audio import AudioExtractor, AudioParams, AudioResult
 from backend.infrastructure.ffmpeg.command import CommandBuilder
-from backend.infrastructure.ffmpeg.errors import FFmpegError
-from backend.infrastructure.ffmpeg.export import ExportEncoder, ExportParams, ExportResult, GpuEncoderSelector
+from backend.infrastructure.ffmpeg.export import ExportEncoder, ExportParams, ExportResult
 from backend.infrastructure.ffmpeg.ffprobe import FFprobeService
 from backend.infrastructure.ffmpeg.frame import FrameExtractor, FrameExtractParams, FrameResult
 from backend.infrastructure.ffmpeg.locate import FFmpegCapabilities, FFmpegLocator
-from backend.infrastructure.ffmpeg.process import ProcessRunner
-from backend.infrastructure.ffmpeg.progress import MediaProgress, ProgressCallback, ProgressParser
+from backend.infrastructure.ffmpeg.process import ProcessResult, ProcessRunner
 from backend.infrastructure.ffmpeg.proxy import ProxyGenerator, ProxyParams, ProxyResult
 from backend.infrastructure.ffmpeg.scene import SceneExtractionHelper, SceneInfo
-from backend.infrastructure.ffmpeg.thumbnail import ThumbnailGenerator, ThumbnailParams, ThumbnailResult
-from backend.infrastructure.ffmpeg.types import (
-    AudioParams as AudioParamsType,
-    CropParams,
-    ExportParams as ExportParamsType,
-    FrameExtractParams as FrameExtractParamsType,
-    MediaInfo,
-    ProxyParams as ProxyParamsType,
-    ThumbnailParams as ThumbnailParamsType,
+from backend.infrastructure.ffmpeg.thumbnail import (
+    ThumbnailGenerator,
+    ThumbnailParams,
+    ThumbnailResult,
 )
+from backend.infrastructure.ffmpeg.types import MediaInfo
 from backend.infrastructure.ffmpeg.video_info import VideoInfoExtractor
 
 
@@ -148,7 +142,7 @@ class FFmpegManager:
         self,
         input_path: str | Path,
         output_path: str | Path,
-        params: ThumbnailParamsType | None = None,
+        params: ThumbnailParams | None = None,
         timeout_seconds: int = 30,
     ) -> ThumbnailResult:
         """Generate a video thumbnail.
@@ -173,7 +167,7 @@ class FFmpegManager:
         input_path: str | Path,
         output_dir: str | Path,
         timestamps: list[float],
-        params: ThumbnailParamsType | None = None,
+        params: ThumbnailParams | None = None,
     ) -> list[ThumbnailResult]:
         """Generate thumbnails at multiple timestamps.
 
@@ -197,7 +191,7 @@ class FFmpegManager:
         self,
         input_path: str | Path,
         output_path: str | Path,
-        params: ProxyParamsType | None = None,
+        params: ProxyParams | None = None,
         timeout_seconds: int = 600,
     ) -> ProxyResult:
         """Generate a proxy video.
@@ -223,7 +217,7 @@ class FFmpegManager:
         self,
         input_path: str | Path,
         output_path: str | Path,
-        params: AudioParamsType | None = None,
+        params: AudioParams | None = None,
         timeout_seconds: int = 300,
     ) -> AudioResult:
         """Extract audio from a video.
@@ -249,7 +243,7 @@ class FFmpegManager:
         self,
         input_path: str | Path,
         output_dir: str | Path,
-        params: FrameExtractParamsType | None = None,
+        params: FrameExtractParams | None = None,
         timeout_seconds: int = 600,
     ) -> list[FrameResult]:
         """Extract frames from a video.
@@ -299,7 +293,7 @@ class FFmpegManager:
         self,
         input_path: str | Path,
         output_path: str | Path,
-        params: ExportParamsType | None = None,
+        params: ExportParams | None = None,
         timeout_seconds: int = 3600,
         prefer_hevc: bool = False,
         backend_type: str = "auto",
@@ -335,7 +329,7 @@ class FFmpegManager:
         end_ms: int,
         copy: bool = False,
         timeout_seconds: int = 300,
-    ) -> ProcessRunner:
+    ) -> ProcessResult:
         """Trim a segment from a video.
 
         Args:
@@ -347,10 +341,8 @@ class FFmpegManager:
             timeout_seconds: Maximum execution time.
 
         Returns:
-            ProcessRunner result.
+            ProcessResult from the FFmpeg execution.
         """
-        # Import needed here to avoid circular imports at top level
-        # This is a direct method, not going through a sub-service
         cmd = CommandBuilder.trim(str(input_path), str(output_path), start_ms, end_ms, copy)
         return await self._runner.run(
             cmd=cmd,
@@ -363,7 +355,7 @@ class FFmpegManager:
         file_list_path: str | Path,
         output_path: str | Path,
         timeout_seconds: int = 600,
-    ) -> ProcessRunner:
+    ) -> ProcessResult:
         """Concatenate multiple videos from a file list.
 
         Args:
@@ -372,7 +364,7 @@ class FFmpegManager:
             timeout_seconds: Maximum execution time.
 
         Returns:
-            ProcessRunner result.
+            ProcessResult from the FFmpeg execution.
         """
         cmd = CommandBuilder.concat(str(file_list_path), str(output_path))
         return await self._runner.run(
@@ -389,7 +381,7 @@ class FFmpegManager:
         output_path: str | Path,
         loudness_target: float = -14.0,
         timeout_seconds: int = 300,
-    ) -> ProcessRunner:
+    ) -> ProcessResult:
         """Normalize audio loudness (EBU R128).
 
         Args:
@@ -399,7 +391,7 @@ class FFmpegManager:
             timeout_seconds: Maximum execution time.
 
         Returns:
-            ProcessRunner result.
+            ProcessResult from the FFmpeg execution.
         """
         cmd = CommandBuilder.normalize_audio(str(input_path), str(output_path), loudness_target)
         return await self._runner.run(
@@ -415,7 +407,7 @@ class FFmpegManager:
         width: int = 1920,
         height: int = 200,
         timeout_seconds: int = 60,
-    ) -> ProcessRunner:
+    ) -> ProcessResult:
         """Generate audio waveform visualization.
 
         Args:
@@ -426,7 +418,7 @@ class FFmpegManager:
             timeout_seconds: Maximum execution time.
 
         Returns:
-            ProcessRunner result.
+            ProcessResult from the FFmpeg execution.
         """
         cmd = CommandBuilder.waveform(str(input_path), str(output_path), width, height)
         return await self._runner.run(
@@ -445,7 +437,7 @@ class FFmpegManager:
         height: int,
         encoder: str = "libx264",
         timeout_seconds: int = 300,
-    ) -> ProcessRunner:
+    ) -> ProcessResult:
         """Scale video to exact dimensions with padding.
 
         Args:
@@ -457,7 +449,7 @@ class FFmpegManager:
             timeout_seconds: Maximum execution time.
 
         Returns:
-            ProcessRunner result.
+            ProcessResult from the FFmpeg execution.
         """
         cmd = CommandBuilder.smart_scale(str(input_path), str(output_path), width, height, encoder)
         return await self._runner.run(

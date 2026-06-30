@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 from backend.infrastructure.ffmpeg.command import CommandBuilder
-from backend.infrastructure.ffmpeg.errors import FFmpegError
 from backend.infrastructure.ffmpeg.process import ProcessRunner
 from backend.infrastructure.ffmpeg.types import AudioParams
 

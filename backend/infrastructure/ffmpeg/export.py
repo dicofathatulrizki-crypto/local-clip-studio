@@ -16,10 +16,17 @@ from pathlib import Path
 from typing import Any
 
 from backend.infrastructure.ffmpeg.command import CommandBuilder
-from backend.infrastructure.ffmpeg.errors import FFmpegError
 from backend.infrastructure.ffmpeg.locate import FFmpegCapabilities
 from backend.infrastructure.ffmpeg.process import ProcessRunner
 from backend.infrastructure.ffmpeg.types import ExportParams
+
+__all__ = [
+    "EncoderMapping",
+    "ExportEncoder",
+    "ExportParams",
+    "ExportResult",
+    "GpuEncoderSelector",
+]
 
 
 @dataclass
@@ -96,22 +103,19 @@ class GpuEncoderSelector:
 
         Returns:
             EncoderMapping with selected encoder and GPU params.
-
-        Raises:
-            FFmpegError: If no encoder is available.
         """
-        if self._caps is None:
-            # No capability info — default to CPU
-            return self._get_encoder("cpu", prefer_hevc)
-
+        # User-specified backend takes priority over auto-detection
         if backend_type != "auto":
-            # User-specified backend
             key = backend_type.lower()
             if key in self.ENCODER_MAP:
                 return self._get_encoder(key, prefer_hevc)
             return self._get_encoder("cpu", prefer_hevc)
 
-        # Auto-detect: priority order
+        # Auto-detect: need capabilities
+        if self._caps is None:
+            return self._get_encoder("cpu", prefer_hevc)
+
+        # Priority order: CUDA → ROCm → Metal → VAAPI → CPU
         if self._caps.has_nvenc or self._caps.has_cuda:
             return self._get_encoder("cuda", prefer_hevc)
         if self._caps.has_amf:
@@ -177,7 +181,6 @@ class GpuEncoderSelector:
         """Get the encoder mapping for a backend, preferring HEVC if requested."""
         mapping = self.ENCODER_MAP.get(backend_key, self.ENCODER_MAP["cpu"])
         if prefer_hevc:
-            # Swap to HEVC encoder
             mapping = EncoderMapping(
                 video_encoder=mapping.hevc_encoder,
                 hevc_encoder=mapping.hevc_encoder,

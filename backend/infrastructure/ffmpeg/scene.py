@@ -5,12 +5,10 @@ generates split commands for extracting individual scenes.
 """
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 from typing import Any
 
-from backend.infrastructure.ffmpeg.errors import FFmpegError
 from backend.infrastructure.ffmpeg.process import ProcessRunner
 
 

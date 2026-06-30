@@ -32,15 +32,15 @@ class TestFFprobeService:
     def test_probe_raises_when_unavailable(self) -> None:
         """Should raise FFmpegNotInstalledError when ffprobe is unavailable."""
         probe = FFprobeService()
-        with patch.object(probe, "is_available", return_value=False):
-            with pytest.raises(FFmpegNotInstalledError):
-                probe.probe("input.mp4")
+        probe._available = False
+        with pytest.raises(FFmpegNotInstalledError):
+            probe.probe("input.mp4")
 
     def test_probe_returns_media_info_on_success(self) -> None:
         """Should parse ffprobe JSON output into MediaInfo."""
         probe = FFprobeService()
+        probe._available = True
         mock_output = {
-            "format": {
                 "format_name": "mp4",
                 "format_long_name": "QuickTime / MOV",
                 "size": "1024000",
@@ -105,62 +105,62 @@ class TestFFprobeService:
     def test_probe_returns_minimal_on_failure(self) -> None:
         """Should return minimal MediaInfo on probe failure."""
         probe = FFprobeService()
-        with patch.object(probe, "is_available", return_value=True):
-            with patch("subprocess.run", side_effect=FileNotFoundError):
-                info = probe.probe("input.mp4")
+        probe._available = True
+        with patch("subprocess.run", side_effect=FileNotFoundError):
+            info = probe.probe("input.mp4")
         assert info.path == "input.mp4"
         assert not info.has_video
 
     def test_probe_with_subprocess_error(self) -> None:
         """Should handle non-zero exit from ffprobe."""
         probe = FFprobeService()
-        with patch.object(probe, "is_available", return_value=True):
-            with patch("subprocess.run") as mock_run:
-                mock_result = MagicMock()
-                mock_result.returncode = 1
-                mock_run.return_value = mock_result
-                info = probe.probe("input.mp4")
+        probe._available = True
+        with patch("subprocess.run") as mock_run:
+            mock_result = MagicMock()
+            mock_result.returncode = 1
+            mock_run.return_value = mock_result
+            info = probe.probe("input.mp4")
         assert info.path == "input.mp4"
         assert info.duration_ms == 0
 
     def test_probe_format_success(self) -> None:
         """Should probe only format information."""
         probe = FFprobeService()
-        with patch.object(probe, "is_available", return_value=True):
-            with patch("subprocess.run") as mock_run:
-                mock_result = MagicMock()
-                mock_result.returncode = 0
-                mock_result.stdout = json.dumps({"format": {"format_name": "mp4", "duration": "30.0"}})
-                mock_run.return_value = mock_result
-                fmt = probe.probe_format("input.mp4")
-                assert fmt["format_name"] == "mp4"
+        probe._available = True
+        with patch("subprocess.run") as mock_run:
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            mock_result.stdout = json.dumps({"format": {"format_name": "mp4", "duration": "30.0"}})
+            mock_run.return_value = mock_result
+            fmt = probe.probe_format("input.mp4")
+            assert fmt["format_name"] == "mp4"
 
     def test_probe_format_unavailable(self) -> None:
         """Should return empty dict when ffprobe is unavailable."""
         probe = FFprobeService()
-        with patch.object(probe, "is_available", return_value=False):
-            fmt = probe.probe_format("input.mp4")
-            assert fmt == {}
+        probe._available = False
+        fmt = probe.probe_format("input.mp4")
+        assert fmt == {}
 
     def test_probe_streams_success(self) -> None:
         """Should probe only stream information."""
         probe = FFprobeService()
-        with patch.object(probe, "is_available", return_value=True):
-            with patch("subprocess.run") as mock_run:
-                mock_result = MagicMock()
-                mock_result.returncode = 0
-                mock_result.stdout = json.dumps({"streams": [{"codec_type": "video", "codec_name": "h264"}]})
-                mock_run.return_value = mock_result
-                streams = probe.probe_streams("input.mp4")
-                assert len(streams) == 1
-                assert streams[0]["codec_name"] == "h264"
+        probe._available = True
+        with patch("subprocess.run") as mock_run:
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            mock_result.stdout = json.dumps({"streams": [{"codec_type": "video", "codec_name": "h264"}]})
+            mock_run.return_value = mock_result
+            streams = probe.probe_streams("input.mp4")
+            assert len(streams) == 1
+            assert streams[0]["codec_name"] == "h264"
 
     def test_probe_streams_unavailable(self) -> None:
         """Should return empty list when ffprobe is unavailable."""
         probe = FFprobeService()
-        with patch.object(probe, "is_available", return_value=False):
-            streams = probe.probe_streams("input.mp4")
-            assert streams == []
+        probe._available = False
+        streams = probe.probe_streams("input.mp4")
+        assert streams == []
 
     def test_parse_stream_duration_invalid(self) -> None:
         """Should handle invalid duration string."""
@@ -196,12 +196,12 @@ class TestFFprobeService:
                 {"index": 1, "codec_type": "subtitle", "codec_name": "subrip"},
             ],
         }
-        with patch.object(probe, "is_available", return_value=True):
-            with patch("subprocess.run") as mock_run:
-                mock_result = MagicMock()
-                mock_result.returncode = 0
-                mock_result.stdout = json.dumps(mock_output)
-                mock_run.return_value = mock_result
-                info = probe.probe("input.mkv")
+        probe._available = True
+        with patch("subprocess.run") as mock_run:
+            mock_result = MagicMock()
+            mock_result.returncode = 0
+            mock_result.stdout = json.dumps(mock_output)
+            mock_run.return_value = mock_result
+            info = probe.probe("input.mkv")
         assert len(info.subtitle_streams) == 1
         assert info.subtitle_streams[0].codec == "subrip"

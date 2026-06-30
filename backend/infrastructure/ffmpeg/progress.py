@@ -9,8 +9,8 @@ This parser handles both formats and produces structured progress objects.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
-from typing import Callable
+from collections.abc import Callable
+from dataclasses import dataclass
 
 
 @dataclass
@@ -103,22 +103,29 @@ class ProgressParser:
         p = self._last_progress
 
         # Try key=value format first (from -progress flag)
-        if "=" in line:
+        if "=" in line and not line.startswith("  "):
+            # Only use key=value parsing for lines that start with a key (not indented stderr)
             parts = line.strip().split("=", 1)
             if len(parts) == 2:
-                key, value = parts[0].strip(), parts[1].strip()
-                if key == "frame":
-                    p.frame = int(value)
-                elif key == "fps":
-                    p.fps = float(value)
-                elif key == "out_time_ms":
-                    p.time_ms = int(value) // 1000
-                elif key == "speed":
-                    p.speed = float(value.replace("x", ""))
-                elif key == "bitrate":
-                    p.bitrate_kbps = float(value.replace("kb/s", ""))
-                elif key == "total_size":
-                    p.size_kb = int(value) // 1024
+                key = parts[0].strip()
+                raw_value = parts[1].strip()
+                # Take only the first token before any space (pure value)
+                value = raw_value.split()[0] if raw_value else ""
+                try:
+                    if key == "frame":
+                        p.frame = int(value)
+                    elif key == "fps":
+                        p.fps = float(value)
+                    elif key == "out_time_ms":
+                        p.time_ms = int(value) // 1000
+                    elif key == "speed":
+                        p.speed = float(value.replace("x", ""))
+                    elif key == "bitrate":
+                        p.bitrate_kbps = float(value.replace("kb/s", ""))
+                    elif key == "total_size":
+                        p.size_kb = int(value) // 1024
+                except (ValueError, IndexError):
+                    pass
 
         # Try regex-based parsing (from default stderr)
         frame_match = _FRAME_RE.search(line)

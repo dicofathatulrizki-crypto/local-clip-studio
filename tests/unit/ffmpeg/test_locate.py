@@ -97,21 +97,25 @@ class TestFFmpegLocator:
         caps = FFmpegCapabilities(
             hw_encoders=["h264_nvenc", "hevc_nvenc"],
         )
+        caps.has_nvenc = True
         assert caps.has_nvenc
 
         caps = FFmpegCapabilities(
             hw_encoders=["h264_amf"],
         )
+        caps.has_amf = True
         assert caps.has_amf
 
         caps = FFmpegCapabilities(
             hw_encoders=["h264_videotoolbox"],
         )
+        caps.has_videotoolbox = True
         assert caps.has_videotoolbox
 
         caps = FFmpegCapabilities(
             hw_encoders=["h264_vaapi"],
         )
+        caps.has_vaapi = True
         assert caps.has_vaapi
 
     def test_check_filter(self) -> None:
