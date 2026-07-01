@@ -76,11 +76,18 @@ class ValidationError(DomainError):
     code: str = "ERR-DOMAIN-005"
     message: str = "Validation failed"
 
-    def __init__(self, field: str, reason: str, value: Any = None) -> None:
-        super().__init__(
-            message=f"Validation failed for {field}: {reason}",
-            details={"field": field, "reason": reason, "value": str(value) if value is not None else None},
-        )
+    def __init__(self, field: str, reason: str | None = None, value: Any = None) -> None:
+        if reason is None:
+            # Single-arg mode: field is used as the full message
+            super().__init__(
+                message=field,
+                details={"field": "", "reason": field, "value": str(value) if value is not None else None},
+            )
+        else:
+            super().__init__(
+                message=f"Validation failed for {field}: {reason}",
+                details={"field": field, "reason": reason, "value": str(value) if value is not None else None},
+            )
 
 
 DomainValidationError = ValidationError

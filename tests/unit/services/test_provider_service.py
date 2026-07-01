@@ -11,6 +11,7 @@ import pytest
 
 from backend.config.encryption import APIKeyEncryption
 from backend.domain.entities.provider import Provider
+from backend.domain.exceptions import DomainValidationError
 from backend.infrastructure.errors import ConflictError, NotFoundError, ValidationError
 from backend.services.provider_service import ProviderNotFoundError, ProviderService
 
@@ -185,11 +186,9 @@ class TestValidateProvider:
         assert result is True
 
     async def test_missing_name(self, service, mock_provider_repo):
-        p = Provider(id="p1", name="", enabled=False)
-        mock_provider_repo.get_domain.return_value = p
-        with pytest.raises(ValidationError) as exc:
-            await service.validate_provider("p1")
-        assert "Provider name is required" in str(exc.value.details.get("errors", []))
+        """Creating a Provider with empty name raises DomainValidationError during construction."""
+        with pytest.raises(DomainValidationError, match="name cannot be empty"):
+            Provider(id="p1", name="", enabled=False)
 
     async def test_no_tasks(self, service, mock_provider_repo):
         p = Provider(id="p1", name="X", enabled=False, supported_tasks=[])
