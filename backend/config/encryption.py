@@ -95,10 +95,13 @@ class APIKeyEncryption:
         self._fernet: Fernet | None = None
 
     def _get_fernet(self) -> Fernet:
-        """Get or create the Fernet cipher."""
+        """Get or create the Fernet cipher from machine-derived key."""
         if self._fernet is None:
-            key = self._key_manager.get_or_create_key()
-            encoded_key = Fernet.generate_key()
+            import base64
+            raw_key = self._key_manager.get_or_create_key()
+            # Pad or truncate to 32 bytes, then base64-encode for Fernet
+            key_bytes = raw_key[:32].ljust(32, b'\0')
+            encoded_key = base64.urlsafe_b64encode(key_bytes)
             self._fernet = Fernet(encoded_key)
         return self._fernet
 

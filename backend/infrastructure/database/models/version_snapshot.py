@@ -1,58 +1,36 @@
-"""
-VersionSnapshot model — stores project version history for recovery.
+"""VersionSnapshot ORM model — project version history."""
 
-Snapshots are created automatically (on project close, before analysis,
-before export) and manually (user-initiated). Supports restoring
-projects to previous states.
-"""
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, JSON, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
 
-from backend.infrastructure.database.base import Base, UUIDMixin
-
-if TYPE_CHECKING:
-    from backend.infrastructure.database.models.project import Project
+from backend.infrastructure.database.engine import Base
+from backend.infrastructure.database.models.base import UUIDMixin
 
 
-class VersionSnapshot(Base, UUIDMixin):
-    """A point-in-time snapshot of a project's state.
-
-    Supports the backup and recovery strategy: snapshots are created
-    at key moments and can be used to restore the project to a
-    previous state.
-    """
+class VersionSnapshot(UUIDMixin, Base):
+    """Project version history snapshot."""
 
     __tablename__ = "version_snapshots"
 
-    # ─── Fields ────────────────────────────────────────────────
     project_id: Mapped[str] = mapped_column(
-        String(36),  # type: ignore[name-defined]
-        ForeignKey("projects.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+        String(36), ForeignKey("projects.id", ondelete="CASCADE")
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
-    snapshot_path: Mapped[str] = mapped_column(Text, nullable=False)
-    snapshot_type: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="auto"
-    )
-    description: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
-    file_size_bytes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    snapshot_type: Mapped[str] = mapped_column(String(20), default="auto")
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    timeline_snapshot: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    project_snapshot: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    file_size_bytes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.now(UTC)
+        DateTime(timezone=True), default=lambda: datetime.now()
     )
 
-    # ─── Relationships ─────────────────────────────────────────
-    project: Mapped[Project] = relationship("Project", back_populates="version_snapshots")
-
-    # ─── Constraints ───────────────────────────────────────────
     __table_args__ = (
-        UniqueConstraint(
-            "project_id", "version_number", name="uq_snapshot_version"
-        ),
+        Index("idx_snapshot_project", "project_id", "version_number"),
+        Index("idx_snapshot_created", "created_at"),
     )

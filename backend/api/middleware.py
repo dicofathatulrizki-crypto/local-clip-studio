@@ -11,6 +11,10 @@ from backend.infrastructure.errors import AppError
 from backend.infrastructure.logging.correlation import CorrelationIDMiddleware
 
 
+from fastapi.responses import JSONResponse
+from backend.infrastructure.logging.logger import get_logger
+
+
 class ErrorHandlingMiddleware(BaseHTTPMiddleware):
     """Middleware to catch unhandled exceptions and return structured JSON errors."""
 
@@ -19,16 +23,11 @@ class ErrorHandlingMiddleware(BaseHTTPMiddleware):
             response = await call_next(request)
             return response
         except AppError as exc:
-            from fastapi.responses import JSONResponse
-
             return JSONResponse(
                 status_code=exc.http_status,
                 content=exc.to_dict(),
             )
         except Exception as exc:
-            from fastapi.responses import JSONResponse
-            from backend.infrastructure.logging.logger import get_logger
-
             logger = get_logger("backend.api.middleware")
             logger.exception(f"Unhandled exception: {exc}")
             return JSONResponse(

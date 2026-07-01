@@ -92,10 +92,16 @@ def main() -> None:
 
 
 def _init_database(settings: Settings) -> None:
-    """Initialize the database."""
-    from backend.infrastructure.database.engine import init_engine
+    """Initialize the database and create tables."""
+    import asyncio
+    from backend.infrastructure.database.engine import init_engine, create_all_tables
 
     init_engine(settings.database.effective_url)
+    try:
+        asyncio.run(create_all_tables())
+    except RuntimeError:
+        # Event loop already running - tables will be created on first access
+        pass
 
 
 if __name__ == "__main__":
