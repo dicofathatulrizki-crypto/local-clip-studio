@@ -81,3 +81,6 @@ class ValidationError(DomainError):
             message=f"Validation failed for {field}: {reason}",
             details={"field": field, "reason": reason, "value": str(value) if value is not None else None},
         )
+
+
+DomainValidationError = ValidationError
