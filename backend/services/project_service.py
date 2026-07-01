@@ -11,6 +11,7 @@ Follows Clean Architecture:
 from __future__ import annotations
 
 import logging
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -99,19 +100,15 @@ class ProjectService:
                 details={"field": "name", "max_length": 255},
             )
 
-        now = datetime.now(timezone.utc)
-
         aggregate = ProjectAggregate.create(
             name=name,
             description=description,
         )
         project = aggregate.project
 
-        # Create project directory
-        projects_base = self._dir_manager.project_dir(project.id)
+        # Create project directory structure
+        project_dir = self._dir_manager.project_dir(project.id)
         try:
-            projects_base.mkdir(parents=True, exist_ok=True)
-            project_dir = projects_base
             project_dir.mkdir(parents=True, exist_ok=True)
             (project_dir / "sources").mkdir(exist_ok=True)
             (project_dir / "proxies").mkdir(exist_ok=True)
@@ -122,13 +119,22 @@ class ProjectService:
         except OSError as exc:
             raise StorageError(
                 message=f"Failed to create project directory: {exc}",
-                details={"project_id": project.id, "path": str(projects_base)},
+                details={"project_id": project.id, "path": str(project_dir)},
             )
 
-        # Persist
-        created = await self._repo.create_from_domain(project)
+        # Persist — clean up directory on failure
+        try:
+            created = await self._repo.create_from_domain(project)
+        except Exception:
+            try:
+                shutil.rmtree(project_dir, ignore_errors=True)
+            except OSError:
+                logger.warning(
+                    "Failed to clean up project directory after DB error",
+                    extra={"extra_fields": {"project_id": project.id, "path": str(project_dir)}},
+                )
+            raise
 
-        # Publish domain event
         logger.info(
             "Project created",
             extra={
@@ -241,7 +247,7 @@ class ProjectService:
                 )
             project.update_description(desc)
 
-        project = await self._repo.update_from_domain(project)
+        updated = await self._repo.update_from_domain(project)
 
         logger.info(
             "Project updated",
@@ -286,8 +292,6 @@ class ProjectService:
         # Remove project directory
         project_dir = self._dir_manager.project_dir(project_id)
         if project_dir.exists():
-            import shutil
-
             try:
                 shutil.rmtree(project_dir)
             except OSError as exc:
@@ -363,8 +367,6 @@ class ProjectService:
                 details={"field": "new_name", "max_length": 255},
             )
 
-        now = datetime.now(timezone.utc)
-
         aggregate = ProjectAggregate.create(
             name=new_name,
             description=f"Duplicate of {source.name}",
@@ -376,22 +378,27 @@ class ProjectService:
             object.__setattr__(duplicate_project, "settings", dict(source.settings))
 
         # Create project directory
-        projects_base = self._dir_manager.project_dir(duplicate_project.id)
+        dup_dir = self._dir_manager.project_dir(duplicate_project.id)
         try:
-            projects_base.mkdir(parents=True, exist_ok=True)
-            (projects_base / "sources").mkdir(exist_ok=True)
-            (projects_base / "proxies").mkdir(exist_ok=True)
-            (projects_base / "exports").mkdir(exist_ok=True)
-            (projects_base / "cache").mkdir(exist_ok=True)
-            (projects_base / "thumbnails").mkdir(exist_ok=True)
-            (projects_base / "versions").mkdir(exist_ok=True)
+            dup_dir.mkdir(parents=True, exist_ok=True)
+            (dup_dir / "sources").mkdir(exist_ok=True)
+            (dup_dir / "proxies").mkdir(exist_ok=True)
+            (dup_dir / "exports").mkdir(exist_ok=True)
+            (dup_dir / "cache").mkdir(exist_ok=True)
+            (dup_dir / "thumbnails").mkdir(exist_ok=True)
+            (dup_dir / "versions").mkdir(exist_ok=True)
         except OSError as exc:
             raise StorageError(
                 message=f"Failed to create duplicate project directory: {exc}",
                 details={"project_id": duplicate_project.id},
             )
 
-        created = await self._repo.create_from_domain(duplicate_project)
+        # Persist — clean up directory on failure
+        try:
+            created = await self._repo.create_from_domain(duplicate_project)
+        except Exception:
+            shutil.rmtree(dup_dir, ignore_errors=True)
+            raise
 
         logger.info(
             "Project duplicated",
@@ -431,7 +438,7 @@ class ProjectService:
                 details={"project_id": project_id, "state": str(project.state)},
             )
 
-        updated = await self._repo.update_from_domain(project)
+        await self._repo.update_from_domain(project)
         project_dir = self._dir_manager.project_dir(project_id)
 
         logger.info(
