@@ -143,14 +143,14 @@ class ProviderService:
             if invalid:
                 errors.append(f"Invalid task types: {invalid}")
 
-        if provider.provider_type != "local" and not provider.api_key:
-            errors.append("API key is required for remote providers")
+        if provider.base_url and not provider.api_key:
+            errors.append("API key is required when a base URL is configured")
 
         if provider.api_key and not self._crypto.is_encrypted(provider.api_key):
             errors.append("API key must be encrypted at rest")
 
-        if provider.provider_type == "api" and not provider.base_url:
-            errors.append("Base URL is required for API providers")
+        if provider.api_key and not provider.base_url:
+            errors.append("Base URL is recommended when an API key is configured")
 
         if errors:
             raise ValidationError(
@@ -383,8 +383,7 @@ class ProviderService:
             id=provider_id,
             name=config.get("name", provider_id),
             enabled=config.get("enabled", True),
-            provider_type=config.get("provider_type", "api"),
-            supported_tasks=set(config.get("supported_tasks", [])),
+            supported_tasks=list(config.get("supported_tasks", [])),
             api_key=encrypted_config.get("api_key"),
             base_url=config.get("base_url"),
             models=config.get("models", {}),
