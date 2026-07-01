@@ -1,18 +1,15 @@
-"""
-ProjectVideo model — join table connecting projects to video masters.
+"""ProjectVideo ORM model — joins projects to videos."""
 
-Tracks per-project video metadata: import order, source path, proxy path.
-Supports the same video being used in multiple projects.
-"""
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.infrastructure.database.base import Base, UUIDMixin
+from backend.infrastructure.database.engine import Base
+from backend.infrastructure.database.models.base import UUIDMixin
 
 if TYPE_CHECKING:
     from backend.infrastructure.database.models.analysis import Analysis
@@ -21,55 +18,35 @@ if TYPE_CHECKING:
     from backend.infrastructure.database.models.video_master import VideoMaster
 
 
-class ProjectVideo(Base, UUIDMixin):
-    """Join table linking a project to a video master record.
-
-    Each entry represents a video's presence in a specific project,
-    with project-specific metadata like import order and proxy path.
-    """
+class ProjectVideo(UUIDMixin, Base):
+    """Join table linking projects to videos with import metadata."""
 
     __tablename__ = "project_videos"
 
-    # ─── Fields ────────────────────────────────────────────────
     project_id: Mapped[str] = mapped_column(
-        String(36),  # type: ignore[name-defined]
-        ForeignKey("projects.id", ondelete="CASCADE"),
-        nullable=False,
-        index=True,
+        String(36), ForeignKey("projects.id", ondelete="CASCADE"), nullable=False
     )
     video_id: Mapped[str] = mapped_column(
-        String(36),  # type: ignore[name-defined]
-        ForeignKey("video_master.id", ondelete="RESTRICT"),
-        nullable=False,
-        index=True,
+        String(36), ForeignKey("video_master.id"), nullable=False
     )
-    import_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    import_order: Mapped[int] = mapped_column(Integer, default=0)
     source_path: Mapped[str] = mapped_column(Text, nullable=False)
-    proxy_path: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    proxy_path: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     added_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.now(UTC)
+        DateTime(timezone=True), default=lambda: datetime.now()
     )
 
-    # ─── Relationships ─────────────────────────────────────────
-    project: Mapped[Project] = relationship("Project", back_populates="videos")
-    video_master: Mapped[VideoMaster] = relationship(
-        "VideoMaster", back_populates="project_videos"
+    project: Mapped["Project"] = relationship("Project", back_populates="videos")
+    video_master: Mapped["VideoMaster"] = relationship("VideoMaster")
+    analysis: Mapped[Optional["Analysis"]] = relationship(
+        "Analysis", back_populates="video", uselist=False, cascade="all, delete-orphan"
     )
-    analysis: Mapped[Analysis | None] = relationship(
-        "Analysis",
-        back_populates="video",
-        uselist=False,
-        cascade="all, delete-orphan",
-        passive_deletes=True,
-    )
-    clip_candidates: Mapped[list[ClipCandidate]] = relationship(
-        "ClipCandidate",
-        back_populates="video",
-        cascade="all, delete-orphan",
-        passive_deletes=True,
+    clip_candidates: Mapped[list["ClipCandidate"]] = relationship(
+        "ClipCandidate", back_populates="video", cascade="all, delete-orphan"
     )
 
-    # ─── Constraints ───────────────────────────────────────────
     __table_args__ = (
         UniqueConstraint("project_id", "video_id", name="uq_project_video"),
+        Index("idx_pv_project", "project_id"),
+        Index("idx_pv_video", "video_id"),
     )

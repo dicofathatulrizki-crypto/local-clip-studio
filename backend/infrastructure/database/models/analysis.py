@@ -1,107 +1,40 @@
-"""
-Analysis model — stores all AI pipeline results for a project video.
+"""Analysis ORM model — stores AI pipeline results."""
 
-One analysis per video (enforced by unique constraint on video_id).
-Analysis data is stored as JSON columns for flexibility.
-Tracks pipeline status through each stage of processing.
-"""
 from __future__ import annotations
 
-from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from datetime import datetime
+from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import JSON
 
-from backend.infrastructure.database.base import Base, UUIDMixin
+from backend.infrastructure.database.engine import Base
+from backend.infrastructure.database.models.base import UUIDMixin
 
 if TYPE_CHECKING:
     from backend.infrastructure.database.models.project_video import ProjectVideo
 
 
-class Analysis(Base, UUIDMixin):
-    """AI analysis results for a project video.
-
-    Stores all pipeline outputs as JSON:
-    - transcript (word-level timestamps)
-    - speakers (diarization results)
-    - scenes (scene boundary list)
-    - topics (topic segmentation)
-    - keywords (extracted keywords)
-    - emotions (emotion timeline)
-    - hooks (detected hook moments)
-    - chapters (chapter markers)
-    - silences (silence segments)
-    - quality_details (per-dimension score breakdown)
-
-    One-to-one with ProjectVideo: each video has exactly one analysis record.
-    """
+class Analysis(UUIDMixin, Base):
+    """AI pipeline analysis results for a video."""
 
     __tablename__ = "analyses"
 
-    # ─── Fields ────────────────────────────────────────────────
     video_id: Mapped[str] = mapped_column(
-        String(36),  # type: ignore[name-defined]
-        ForeignKey("project_videos.id", ondelete="CASCADE"),
-        unique=True,
-        nullable=False,
-        index=True,
+        String(36), ForeignKey("project_videos.id", ondelete="CASCADE"), unique=True
     )
-    status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="pending", index=True
-    )
-    transcript: Mapped[dict | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    speakers: Mapped[dict | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    scenes: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    topics: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    keywords: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    emotions: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    hooks: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    chapters: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    silences: Mapped[list | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    quality_score: Mapped[int | None] = mapped_column(
-        Integer, nullable=True, default=None
-    )
-    quality_details: Mapped[dict | None] = mapped_column(
-        JSON, nullable=True, default=None
-    )
-    duration_ms: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    pipeline_version: Mapped[str | None] = mapped_column(
-        String(20), nullable=True, default=None
-    )
-    started_at: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True, default=None
-    )
-    completed_at: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True, default=None
-    )
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, nullable=False, default=datetime.now(UTC)
-    )
+    status: Mapped[str] = mapped_column(String(20), default="pending")
+    transcript: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    speakers: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    scenes: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    topics: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    keywords: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    emotions: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    hooks: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    chapters: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    quality_score: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    duration_ms: Mapped[int] = mapped_column(Integer, default=0)
+    started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
 
-    # ─── Relationships ─────────────────────────────────────────
-    video: Mapped[ProjectVideo] = relationship("ProjectVideo", back_populates="analysis")
-
-    # ─── Constraints ───────────────────────────────────────────
-    __table_args__ = (
-        UniqueConstraint("video_id", name="uq_analysis_video"),
-    )
+    video: Mapped["ProjectVideo"] = relationship("ProjectVideo", back_populates="analysis")
