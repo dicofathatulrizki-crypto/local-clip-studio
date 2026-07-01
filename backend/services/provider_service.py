@@ -159,20 +159,6 @@ class ProviderService:
             )
         return True
 
-    async def refresh_provider(self, provider_id: str) -> Provider:
-        """Reload a provider from the Plugin Registry (runtime refresh).
-
-        Returns the refreshed provider domain entity.
-        """
-        provider = await self._get_provider_or_raise(provider_id)
-        provider.refresh()
-        updated = await self._repo.update_from_domain(provider)
-        logger.info(
-            "Provider refreshed",
-            extra={"extra_fields": {"provider_id": provider_id, "event": "provider.refreshed"}},
-        )
-        return updated
-
     # ------------------------------------------------------------------
     # Connection testing
     # ------------------------------------------------------------------
@@ -413,8 +399,7 @@ class ProviderService:
 
     async def _update_provider(self, existing: Provider, config: dict[str, Any]) -> Provider:
         encrypted = self._encrypt_sensitive(config)
-        if "name" in config:
-            existing.rename(str(config["name"]))
+        # name is immutable after creation — no rename logic needed
         if "enabled" in config:
             if config["enabled"]:
                 existing.enable()
