@@ -187,20 +187,24 @@ class TestValidateProvider:
     async def test_missing_name(self, service, mock_provider_repo):
         p = Provider(id="p1", name="", enabled=False)
         mock_provider_repo.get_domain.return_value = p
-        with pytest.raises(ValidationError, match="name"):
+        with pytest.raises(ValidationError) as exc:
             await service.validate_provider("p1")
+        assert "Provider name is required" in str(exc.value.details.get("errors", []))
 
     async def test_no_tasks(self, service, mock_provider_repo):
         p = Provider(id="p1", name="X", enabled=False, supported_tasks=[])
         mock_provider_repo.get_domain.return_value = p
-        with pytest.raises(ValidationError, match="task"):
+        with pytest.raises(ValidationError) as exc:
             await service.validate_provider("p1")
+        assert "At least one supported task is required" in str(exc.value.details.get("errors", []))
 
-    async def test_missing_api_key_remote(self, service, mock_provider_repo):
-        p = Provider(id="p1", name="X", enabled=True, supported_tasks=["stt"], provider_type="api")
+    async def test_missing_api_key_with_base_url(self, service, mock_provider_repo):
+        p = Provider(id="p1", name="X", enabled=True, supported_tasks=["stt"],
+                     base_url="https://api.example.com", api_key=None)
         mock_provider_repo.get_domain.return_value = p
-        with pytest.raises(ValidationError, match="API key"):
+        with pytest.raises(ValidationError) as exc:
             await service.validate_provider("p1")
+        assert "API key is required" in str(exc.value.details.get("errors", []))
 
 
 # ==================================================================
